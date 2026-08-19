@@ -1,0 +1,169 @@
+{% extends "app/base_app.html" %}
+{% block crumb %}Human review · {{ doc.schema_name }}{% endblock %}
+{% block heading %}{{ doc.filename }}{% endblock %}
+{% block top_actions %}
+<button class="btn btn-ghost" type="button" data-download="json">Download JSON</button>
+<button class="btn btn-ghost" type="button" data-download="csv">Download CSV</button>
+<button class="btn btn-ghost" type="button" data-copy-sql>Copy SQL</button>
+<button class="btn btn-ghost" type="button" data-open="modal-reject">Reject</button>
+<button class="btn btn-dark" type="button" data-open="modal-approve">Approve &amp; export</button>
+{% endblock %}
+{% block app_content %}
+<div class="review" data-review data-filename="{{ doc.filename }}">
+  <script type="application/json" id="review-payload">{{ payload|safe }}</script>
+  <script type="text/plain" id="sql-payload">{{ sql }}</script>
+
+  <div class="ingest-overlay" data-ingest>
+    <p class="ingest-kicker">Pipeline</p>
+    <p class="ingest-step" data-ingest-step>OCR Scanning…</p>
+    <div class="ingest-bar"><span data-ingest-fill></span></div>
+    <ol class="ingest-stages">
+      <li data-ingest-stage="0">OCR Scanning</li>
+      <li data-ingest-stage="1">Vision LLM Extraction</li>
+      <li data-ingest-stage="2">Pydantic Schema Validation</li>
+      <li data-ingest-stage="3">Ready for Review</li>
+    </ol>
+  </div>
+
+  <section class="doc-pane">
+    <div class="doc-toolbar">
+      <span>{{ doc.pages }}</span>
+      <a class="link" href="{% url 'schemas' %}">{{ doc.schema_name }} schema</a>
+    </div>
+    <div class="scan-stage{% if doc.kind == 'bol' %} is-skew-wrap{% endif %}">
+      <div class="scan-page scan-{{ doc.kind }}{% if doc.kind == 'invoice' %} is-messy{% elif doc.kind == 'receipt' %} is-faded{% endif %}" data-scan>
+        {% if doc.kind == "invoice" %}
+        <header>
+          <div>
+            <p class="paper-kicker">Harbor Freight Lines</p>
+            <h2>Invoice</h2>
+          </div>
+          <p>INV-10482</p>
+        </header>
+        <p class="paper-meta">Date: 18 Aug 2026 · Bill to: Fieldline Ops · Due 01 Sep 2026</p>
+        <table>
+          <thead><tr><th>Description</th><th>Qty</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr><td>Linehaul — Chicago to Dallas</td><td>1</td><td>$3,400.00</td></tr>
+            <tr><td>Fuel surcharge</td><td>1</td><td>$620.00</td></tr>
+            <tr><td>Detention</td><td>2 hrs</td><td>$260.00</td></tr>
+          </tbody>
+        </table>
+        <p class="paper-total">USD &nbsp; Total due <strong>$4,280.00</strong></p>
+        <p class="scan-stamp">PO # (stamp smudged)</p>
+        {% elif doc.kind == "receipt" %}
+        <p class="hand-shop">Meridian Supplies</p>
+        <p class="hand-line">Mar 14 — wait, 2027??</p>
+        <p class="hand-item">copy paper …… 28.40</p>
+        <p class="hand-item">binder clips ×2 … 12.80</p>
+        <p class="hand-sum">sub 41.20</p>
+        <p class="hand-sum">tax 3.71</p>
+        <p class="hand-total">TOTAL 44.91</p>
+        <p class="hand-pay">VISA ••4412  thank u</p>
+        {% else %}
+        <p class="bol-kicker">UNIFORM STRAIGHT BILL OF LADING · 1 / 3</p>
+        <p class="bol-pro">PRO-2291</p>
+        <p><strong>Shipper</strong><br>Northline Logistics</p>
+        <p><strong>Consignee</strong><br>Harbor Freight Lines — Dallas DC</p>
+        <p><strong>Pickup</strong> 17 Aug 2026</p>
+        <p class="bol-weight"><strong>Weight</strong> 18,420 lbs</p>
+        {% endif %}
+        {% for field in doc.fields %}
+        <button
+          class="bbox{% if field.low %} is-warn{% endif %}"
+          type="button"
+          data-bbox="{{ field.key }}"
+          style="left:{{ field.bbox.0 }}%;top:{{ field.bbox.1 }}%;width:{{ field.bbox.2 }}%;height:{{ field.bbox.3 }}%;"
+          aria-label="Highlight {{ field.label }}"
+        ></button>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="fields-pane">
+    <div class="pane-label pane-tools">
+      <span>Extracted data</span>
+      <div class="view-toggle" role="tablist">
+        <button type="button" class="is-on" data-view="form">Visual Form</button>
+        <button type="button" data-view="json">JSON Payload</button>
+        <button type="button" data-view="sql">SQL Insert Row</button>
+      </div>
+    </div>
+
+    <div data-view-panel="form">
+      <p class="hint">Hover or click a field — the matching region glows on the scan.</p>
+
+      <div class="verify-banner">
+        {% for rule in doc.validations %}
+        <span class="{% if rule.ok %}is-ok{% else %}is-bad{% endif %}">{% if rule.ok %}✔{% else %}!{% endif %} {{ rule.title }}</span>
+        {% endfor %}
+      </div>
+
+      <form class="fields" data-fields>
+        {% for field in doc.fields %}
+        <div class="field{% if field.low %} is-low{% endif %}" data-field="{{ field.key }}">
+          <span class="field-head">{{ field.label }}
+            {% if field.low %}
+            <button class="icon-pencil" type="button" data-edit-inline aria-label="Edit {{ field.label }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+            </button>
+            {% endif %}
+          </span>
+          <input name="{{ field.key }}" value="{{ field.value }}" {% if field.low %}data-low-input{% endif %} />
+          <div class="field-meta">
+            {% if field.low %}
+            <span class="conf-badge conf-warn">{{ field.conf }}% Review needed</span>
+            <button class="btn-mini" type="button" data-approve-field>Approve</button>
+            {% else %}
+            <span class="conf-badge conf-ok">{{ field.conf }}% Confidence</span>
+            {% endif %}
+            {% if field.tag %}<span class="verify-tag">✔ {{ field.tag }}</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </form>
+
+      {% if doc.line_items %}
+      <div class="line-items">
+        <p class="pane-label">Line items</p>
+        <table class="table compact">
+          <thead><tr><th>Description</th><th>Qty</th><th>Amount</th></tr></thead>
+          <tbody>
+            {% for row in doc.line_items %}
+            <tr>
+              <td><input value="{{ row.0 }}" /></td>
+              <td><input value="{{ row.1 }}" /></td>
+              <td><input value="{{ row.2 }}" /></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="json-pane" data-view-panel="json" hidden>
+      <p class="hint">Validated JSON after Pydantic — ready to POST to your API.</p>
+      <p class="code-label">JSON payload</p>
+      <pre class="code-block">{{ payload }}</pre>
+      <div class="btn-row">
+        <button class="btn btn-dark" type="button" data-download="json">Download clean JSON</button>
+        <button class="btn btn-ghost" type="button" data-download="csv">Download formatted CSV</button>
+      </div>
+    </div>
+
+    <div class="json-pane" data-view-panel="sql" hidden>
+      <p class="hint">PostgreSQL insert generated from the same schema. Copy into psql or your migration tool.</p>
+      <p class="code-label">SQL insert row</p>
+      <pre class="code-block" id="sql-view">{{ sql }}</pre>
+      <p class="code-label">DDL</p>
+      <pre class="code-block">{{ doc.postgres }}</pre>
+      <div class="btn-row">
+        <button class="btn btn-dark" type="button" data-copy-sql>Copy PostgreSQL insert script</button>
+        <button class="btn btn-ghost" type="button" data-webhook-test>Send webhook test</button>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

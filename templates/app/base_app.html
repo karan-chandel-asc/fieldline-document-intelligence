@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block title %}{% block app_title %}Workspace{% endblock %} — Fieldline{% endblock %}
+{% block body_class %}page-app{% endblock %}
+{% block body %}
+{% csrf_token %}
+<div class="app">
+  <aside class="sidebar">
+    <a class="logo logo-light" href="{% url 'landing' %}">Fieldline</a>
+    <nav class="side-nav">
+      <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-on{% endif %}">Overview</a>
+      <a href="{% url 'inbox' %}" class="{% if request.resolver_match.url_name == 'inbox' %}is-on{% endif %}">Inbox</a>
+      <a href="{% url 'review' %}" class="{% if request.resolver_match.url_name == 'review' %}is-on{% endif %}">Review</a>
+      <a href="{% url 'exceptions' %}" class="{% if request.resolver_match.url_name == 'exceptions' %}is-on{% endif %}">Exceptions</a>
+      <a href="{% url 'schemas' %}" class="{% if request.resolver_match.url_name == 'schemas' %}is-on{% endif %}">Schemas</a>
+      <a href="{% url 'exports' %}" class="{% if request.resolver_match.url_name == 'exports' %}is-on{% endif %}">Exports</a>
+    </nav>
+    <button class="side-help" type="button" data-open="modal-help">Need help?</button>
+    <a class="btn btn-hire btn-full" href="{{ FIVERR_GIG_URL }}" target="_blank" rel="noopener">Hire on Fiverr</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <p class="crumb">{% block crumb %}Workspace{% endblock %}</p>
+        <h1>{% block heading %}Overview{% endblock %}</h1>
+      </div>
+      <div class="top-right">
+        {% block top_actions %}{% endblock %}
+        <button class="icon-btn" type="button" data-open="modal-search" aria-label="Search" title="Search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        </button>
+        <button class="icon-btn has-dot" type="button" data-open="modal-alerts" aria-label="Alerts" title="Alerts">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        </button>
+        <button class="avatar" type="button" data-open="modal-account" title="Account">KC</button>
+      </div>
+    </header>
+    <div class="main-body">
+      {% block app_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<!-- Shared modals -->
+<div class="modal-root" data-modal-root hidden>
+  <div class="modal-backdrop" data-close-modal></div>
+
+  <div class="modal" id="modal-upload" hidden>
+    <header>
+      <h2>Upload documents</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <div class="dropzone" data-dropzone>
+        <p><strong>Drop PDFs or images</strong><br>or click to browse</p>
+        <input type="file" accept=".pdf,image/*" multiple hidden data-file-input />
+      </div>
+      <label class="field">
+        <span>Schema</span>
+        <select>
+          <option>Auto-detect</option>
+          <option>Invoice</option>
+          <option>Receipt</option>
+          <option>Bill of lading</option>
+          <option>Contract</option>
+        </select>
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-upload-start>Start extraction</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-search" hidden>
+    <header>
+      <div>
+        <h2>Search workspace</h2>
+        <p class="modal-sub">Jump to a document or schema.</p>
+      </div>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <input class="search wide" type="search" placeholder="Vendor, invoice no, filename…" />
+      <ul class="queue">
+        <li><div><strong>INV-10482.pdf</strong><span>Harbor Freight · needs review</span></div><a class="link" href="{% url 'review' %}?doc=invoice">Open</a></li>
+        <li><div><strong>BOL-2291.pdf</strong><span>Northline · skewed scan</span></div><a class="link" href="{% url 'review' %}?doc=bol">Open</a></li>
+        <li><div><strong>RCP-8831.pdf</strong><span>Handwritten receipt</span></div><a class="link" href="{% url 'review' %}?doc=receipt">Open</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-alerts" hidden>
+    <header>
+      <div>
+        <h2>Alerts</h2>
+        <p class="modal-sub">What needs attention right now.</p>
+      </div>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <ul class="queue">
+        <li><div><strong>3 documents waiting review</strong><span>Oldest is 2 hours ago</span></div><a class="link" href="{% url 'review' %}?doc=invoice">Go</a></li>
+        <li><div><strong>Export to Sheets failed</strong><span>Webhook 502 · retry available</span></div><a class="link" href="{% url 'exports' %}">Go</a></li>
+        <li><div><strong>New schema suggested</strong><span>Contract layout looks new</span></div><a class="link" href="{% url 'schemas' %}">Go</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="modal modal-sm" id="modal-account" hidden>
+    <header>
+      <div>
+        <h2>Karan Chandel</h2>
+        <p class="modal-sub">demo@fieldline.app</p>
+      </div>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body stack-links">
+      <a href="{% url 'schemas' %}">Extraction schemas</a>
+      <button type="button" data-open="modal-invite">Invite teammate</button>
+      <a href="{% url 'landing' %}">View marketing site</a>
+      <a href="{% url 'logout' %}" data-logout="{% url 'logout_api' %}">Sign out</a>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-approve" hidden>
+    <header>
+      <h2>Approve &amp; export</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <p>Send validated fields to a destination. Low-confidence values stay flagged in the payload.</p>
+      <label class="field">
+        <span>Destination</span>
+        <select>
+          <option>PostgreSQL</option>
+          <option>JSON download</option>
+          <option>CSV / Excel</option>
+          <option>Webhook</option>
+        </select>
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-download="json">Download JSON</button>
+      <button class="btn btn-dark" type="button" data-confirm-approve>Confirm approve</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-reject" hidden>
+    <header>
+      <h2>Reject document</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <label class="field">
+        <span>Reason</span>
+        <select>
+          <option>Wrong document type</option>
+          <option>Unreadable scan</option>
+          <option>Missing pages</option>
+          <option>Duplicate</option>
+          <option>Other</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Note</span>
+        <textarea rows="3" placeholder="What should happen next?"></textarea>
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-confirm-reject>Send to exceptions</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-export" hidden>
+    <header>
+      <h2>New export</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <label class="field">
+        <span>Format</span>
+        <select><option>CSV</option><option>JSON</option><option>Excel</option></select>
+      </label>
+      <label class="field">
+        <span>Range</span>
+        <select><option>Approved today</option><option>This week</option><option>Selected documents</option></select>
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-confirm-export>Generate file</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-filters" hidden>
+    <header>
+      <h2>Filters</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <label class="field">
+        <span>Type</span>
+        <select><option>Any</option><option>Invoice</option><option>Receipt</option><option>BOL</option><option>Contract</option></select>
+      </label>
+      <label class="field">
+        <span>Status</span>
+        <select><option>Any</option><option>Queued</option><option>Needs review</option><option>Approved</option><option>Rejected</option></select>
+      </label>
+      <label class="field">
+        <span>Received</span>
+        <select><option>Any time</option><option>Today</option><option>Last 7 days</option></select>
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Reset</button>
+      <button class="btn btn-dark" type="button" data-apply-filters>Apply filters</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-schema" hidden>
+    <header>
+      <h2>New schema</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <label class="field">
+        <span>Name</span>
+        <input placeholder="e.g. Utility bill" />
+      </label>
+      <label class="field">
+        <span>Required fields</span>
+        <input placeholder="vendor, amount, due_date" />
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-save-schema>Save schema</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-schema-edit" hidden>
+    <header>
+      <h2>Edit schema</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <p class="hint">Invoice · 6 fields. Toggle required flags (UI only).</p>
+      <label class="check"><input type="checkbox" checked /> vendor — required</label>
+      <label class="check"><input type="checkbox" checked /> invoice_no — required</label>
+      <label class="check"><input type="checkbox" /> po_number — optional</label>
+      <label class="check"><input type="checkbox" checked /> total — required</label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Close</button>
+      <button class="btn btn-dark" type="button" data-save-schema>Save changes</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-field" hidden>
+    <header>
+      <h2>Field detail</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <p><strong>PO number</strong> · 41% confidence</p>
+      <p class="hint">Model saw “PO” near a stamp. Confirm against the document or leave blank.</p>
+      <label class="field">
+        <span>Corrected value</span>
+        <input value="PO-??" />
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Keep as-is</button>
+      <button class="btn btn-dark" type="button" data-close-modal>Save field</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-preview" hidden>
+    <header>
+      <h2>Document preview</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <article class="paper">
+        <p class="paper-kicker">Harbor Freight Lines</p>
+        <h2>Invoice INV-10482</h2>
+        <p>Larger preview for operators. Swap this for a PDF canvas in your backend.</p>
+      </article>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-invite" hidden>
+    <header>
+      <h2>Invite teammate</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <label class="field">
+        <span>Email</span>
+        <input type="email" placeholder="ops@company.com" />
+      </label>
+      <label class="field">
+        <span>Role</span>
+        <select><option>Reviewer</option><option>Admin</option><option>Viewer</option></select>
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-send-invite>Send invite</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-webhook" hidden>
+    <header>
+      <h2>Webhook destination</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <label class="field">
+        <span>URL</span>
+        <input placeholder="https://your-api.com/fieldline" />
+      </label>
+      <label class="field">
+        <span>Secret</span>
+        <input placeholder="whsec_…" />
+      </label>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-save-webhook>Save webhook</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-retry" hidden>
+    <header>
+      <h2>Retry job</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <p>Re-run extraction for this document with the same schema?</p>
+    </div>
+    <footer>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-confirm-retry>Retry now</button>
+    </footer>
+  </div>
+
+  <div class="modal" id="modal-help" hidden>
+    <header>
+      <h2>Help</h2>
+      <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
+    </header>
+    <div class="modal-body">
+      <p>Click a field on the review screen to highlight it on the scan. Try the three sample documents from the landing page.</p>
+      <a class="link" href="{% url 'review' %}?doc=invoice">Open invoice review</a>
+    </div>
+    <footer>
+      <button class="btn btn-dark" type="button" data-close-modal>Got it</button>
+    </footer>
+  </div>
+</div>
+{% endblock %}

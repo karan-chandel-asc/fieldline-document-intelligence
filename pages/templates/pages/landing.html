@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Fieldline — PDFs in. Structured data out.{% endblock %}
+{% block body_class %}page-marketing{% endblock %}
+{% block body %}
+<header class="m-nav">
+  <a class="logo" href="{% url 'landing' %}">Fieldline</a>
+  <nav>
+    <a href="#try">Try a sample</a>
+    <a href="#how">How it works</a>
+    <a href="#stack">Architecture</a>
+    <a href="{% url 'login' %}">Sign in</a>
+    <a href="{% url 'signup' %}">Sign up</a>
+  </nav>
+  <div class="m-actions">
+    <a class="btn btn-ghost" href="#try">1-click demo</a>
+  </div>
+</header>
+
+<ul class="metric-strip">
+  <li><strong>1.8s</strong> avg. extraction time</li>
+  <li><strong>Fast setup</strong> Start extracting in minutes</li>
+  <li><strong>99.4%</strong> parsing accuracy with Pydantic checks</li>
+</ul>
+
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Document intelligence</p>
+    <h1>Messy PDFs become<br>fields you can trust.</h1>
+    <p class="lede">Invoices, receipts, and freight bills — extracted, validated with Pydantic, then reviewed before anything hits PostgreSQL.</p>
+    <div class="hero-actions">
+      <a class="btn btn-dark" href="{% url 'review' %}?doc=invoice">Open live review</a>
+      <a class="btn btn-ghost" href="{% url 'inbox' %}">View inbox</a>
+    </div>
+  </div>
+  <a class="hero-card" href="{% url 'review' %}?doc=invoice">
+    <div class="hero-card-top">
+      <span>INV-10482.pdf</span>
+      <span class="pill pill-warn">Needs review</span>
+    </div>
+    <div class="hero-row"><span>Vendor</span><strong>Harbor Freight Lines</strong></div>
+    <div class="hero-row"><span>Invoice date</span><strong>18 Aug 2026</strong></div>
+    <div class="hero-row"><span>Total</span><strong>$4,280.00</strong></div>
+    <div class="hero-row dim"><span>PO number</span><em>Hover the field — the scan lights up</em></div>
+  </a>
+</section>
+
+<section class="strip" id="try">
+  <div>
+    <p class="eyebrow">1-click interactive demo</p>
+    <h2>Three documents. No file upload.</h2>
+    <p>Click a card. Watch OCR → Vision LLM → Pydantic → review, with bounding boxes and JSON.</p>
+  </div>
+  <div class="sample-grid">
+    <a class="sample-card" href="{% url 'review' %}?doc=invoice">
+      <span class="pill pill-ok">Tables &amp; skew</span>
+      <h3>Messy scanned invoice</h3>
+      <p>Line-item tables, smudged PO stamp, math check on $4,280.00.</p>
+    </a>
+    <a class="sample-card" href="{% url 'review' %}?doc=receipt">
+      <span class="pill pill-warn">Low contrast</span>
+      <h3>Faded physical receipt</h3>
+      <p>Handwritten merchant, washed-out ink, a date the model flagged as future.</p>
+    </a>
+    <a class="sample-card" href="{% url 'review' %}?doc=bol">
+      <span class="pill pill-muted">3 pages</span>
+      <h3>Logistics freight bill</h3>
+      <p>Rotated multi-page BOL — shipper, consignee, PRO, weight.</p>
+    </a>
+  </div>
+</section>
+
+<section class="strip" id="how">
+  <div>
+    <h2>How teams use it</h2>
+    <p>Drop a file in. Fieldline reads it. You approve exceptions. Clean JSON, CSV, or a database row leaves the building.</p>
+  </div>
+  <ol class="steps">
+    <li><a href="{% url 'inbox' %}"><strong>Ingest</strong> Upload, email, or a watched folder.</a></li>
+    <li><a href="{% url 'review' %}?doc=invoice"><strong>Extract</strong> Fields, line items, dates, totals.</a></li>
+    <li><a href="{% url 'review' %}?doc=invoice"><strong>Review</strong> Humans fix only what looks uncertain.</a></li>
+    <li><a href="{% url 'exports' %}"><strong>Export</strong> JSON, CSV, SQL, webhook.</a></li>
+  </ol>
+</section>
+
+<section class="split" id="review">
+  <div>
+    <p class="eyebrow">Human in the loop</p>
+    <h2>Accuracy is a process, not a promise.</h2>
+    <p>Layouts change. Scans smear. Tables break. Fieldline flags weak fields so your team confirms them — then the rest flows through.</p>
+    <a class="btn btn-dark" href="{% url 'review' %}?doc=invoice">Talk through a demo</a>
+  </div>
+  <ul class="feature-list">
+    <li><a href="{% url 'review' %}?doc=invoice">Bounding boxes on hover and click</a></li>
+    <li><a href="{% url 'review' %}?doc=invoice">Form, JSON payload, and SQL insert</a></li>
+    <li><a href="{% url 'schemas' %}">Custom extraction schemas</a></li>
+    <li><a href="{% url 'inbox' %}">Batch workers with live throughput</a></li>
+  </ul>
+</section>
+
+<section class="strip" id="stack">
+  <p class="eyebrow">Architecture</p>
+  <h2>What you are buying under the UI</h2>
+  <ol class="arch">
+    <li><strong>Ingest</strong>PDF, Drive, S3</li>
+    <li><strong>FastAPI</strong>Job API</li>
+    <li><strong>Celery</strong>Worker queue</li>
+    <li><strong>Vision LLM</strong>GPT-4o / Claude</li>
+    <li><strong>Pydantic</strong>Schema + math</li>
+    <li><strong>PostgreSQL</strong>Clean rows</li>
+  </ol>
+</section>
+
+<section class="strip logos-block">
+  <p class="logo-kicker">Destination integration grid</p>
+  <ul class="logo-grid">
+    <li>PostgreSQL</li>
+    <li>Supabase</li>
+    <li>Airtable</li>
+    <li>QuickBooks</li>
+    <li>Xero</li>
+    <li>AWS S3</li>
+    <li>Google Sheets</li>
+    <li>n8n Webhooks</li>
+  </ul>
+</section>
+
+<footer class="m-foot">
+</footer>
+{% endblock %}

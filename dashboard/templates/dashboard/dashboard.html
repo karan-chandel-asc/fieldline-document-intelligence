@@ -1,0 +1,80 @@
+{% extends "app/base_app.html" %}
+{% block crumb %}Today{% endblock %}
+{% block heading %}Overview{% endblock %}
+{% block top_actions %}
+<button class="btn btn-ghost" type="button" data-open="modal-upload">Upload</button>
+<a class="btn btn-dark" href="{% url 'inbox' %}">Go to inbox</a>
+{% endblock %}
+{% block app_content %}
+<section class="kpi-row">
+  <a class="kpi" href="{% url 'inbox' %}">
+    <p>In queue</p>
+    <strong>12</strong>
+    <span>Open inbox</span>
+  </a>
+  <a class="kpi" href="{% url 'review' %}?doc=invoice">
+    <p>Needs review</p>
+    <strong>5</strong>
+    <span>Open review</span>
+  </a>
+  <a class="kpi" href="{% url 'exports' %}">
+    <p>Approved today</p>
+    <strong>28</strong>
+    <span>Open exports</span>
+  </a>
+  <a class="kpi" href="{% url 'exceptions' %}">
+    <p>Exceptions</p>
+    <strong>3</strong>
+    <span>Open exceptions</span>
+  </a>
+</section>
+
+<section class="grid-2">
+  <article class="panel">
+    <header>
+      <h2>Needs your eye</h2>
+      <a href="{% url 'review' %}?doc=invoice">Open review</a>
+    </header>
+    <ul class="queue">
+      <li>
+        <button type="button" class="row-btn" data-open="modal-preview">
+          <strong>INV-10482.pdf</strong>
+          <span>Harbor Freight · Invoice · PO unclear</span>
+        </button>
+        <a class="pill pill-warn" href="{% url 'review' %}?doc=invoice">Review</a>
+      </li>
+      <li>
+        <button type="button" class="row-btn" data-open="modal-preview">
+          <strong>BOL-2291.pdf</strong>
+          <span>Northline Logistics · Bill of lading</span>
+        </button>
+        <a class="pill pill-warn" href="{% url 'review' %}?doc=bol">Review</a>
+      </li>
+      <li>
+        <button type="button" class="row-btn" data-open="modal-retry">
+          <strong>lease-westside.pdf</strong>
+          <span>Westside Realty · still queued</span>
+        </button>
+        <button class="pill pill-muted" type="button" data-open="modal-retry">Retry</button>
+      </li>
+    </ul>
+  </article>
+  <article class="panel">
+    <header>
+      <h2>Pipeline</h2>
+      <button class="link" type="button" data-open="modal-help">How this maps</button>
+    </header>
+    <ol class="pipe">
+      <li class="is-done"><span>01</span> File received</li>
+      <li class="is-done"><span>02</span> Pages read</li>
+      <li class="is-now"><span>03</span> Fields extracted</li>
+      <li><span>04</span> Human review</li>
+      <li><span>05</span> Export / webhook</li>
+    </ol>
+    <div class="btn-row">
+      <button class="btn btn-ghost" type="button" data-open="modal-webhook">Add webhook</button>
+      <a class="btn btn-dark" href="{% url 'exports' %}">Open exports</a>
+    </div>
+  </article>
+</section>
+{% endblock %}

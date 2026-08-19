@@ -1,0 +1,45 @@
+{% extends "app/base_app.html" %}
+{% block crumb %}Failures{% endblock %}
+{% block heading %}Exceptions{% endblock %}
+{% block top_actions %}
+<button class="btn btn-ghost" type="button" data-open="modal-filters">Filters</button>
+{% endblock %}
+{% block app_content %}
+<p class="lead">Rejected or failed jobs land here. Retry, reassign schema, or send a note.</p>
+<div class="table-wrap">
+<table class="table">
+  <thead>
+    <tr><th>Document</th><th>Issue</th><th>When</th><th></th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>scan-blur-09.pdf</strong><span>Unreadable scan</span></td>
+      <td>OCR confidence too low</td>
+      <td>18 Aug · 10:02</td>
+      <td>
+        <button class="link" type="button" data-open="modal-retry">Retry</button>
+        · <button class="link" type="button" data-open="modal-preview">Preview</button>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>BOL-2100.pdf</strong><span>Wrong schema</span></td>
+      <td>Parsed as invoice</td>
+      <td>18 Aug · 07:41</td>
+      <td>
+        <button class="link" type="button" data-open="modal-schema-edit">Change schema</button>
+        · <button class="link" type="button" data-open="modal-retry">Retry</button>
+      </td>
+    </tr>
+    <tr>
+      <td><strong>INV-9901.pdf</strong><span>Duplicate</span></td>
+      <td>Same invoice_no as INV-10482</td>
+      <td>17 Aug · 19:12</td>
+      <td>
+        <button class="link" type="button" data-open="modal-reject">Keep rejected</button>
+        · <a class="link" href="{% url 'review' %}?doc=invoice">Compare</a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+{% endblock %}

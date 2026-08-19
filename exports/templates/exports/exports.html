@@ -1,0 +1,67 @@
+{% extends "app/base_app.html" %}
+{% block crumb %}Outbound{% endblock %}
+{% block heading %}Exports{% endblock %}
+{% block top_actions %}
+<button class="btn btn-ghost" type="button" data-open="modal-webhook">Webhooks</button>
+<button class="btn btn-dark" type="button" data-open="modal-export">New export</button>
+{% endblock %}
+{% block app_content %}
+<script type="application/json" id="review-payload">{{ sample_json|safe }}</script>
+<script type="text/plain" id="sql-payload">{{ sql }}</script>
+
+<div class="export-actions">
+  <button class="btn btn-dark" type="button" data-download="json">Download clean JSON</button>
+  <button class="btn btn-ghost" type="button" data-download="csv">Download formatted CSV</button>
+  <button class="btn btn-ghost" type="button" data-copy-sql>Copy PostgreSQL insert script</button>
+  <button class="btn btn-ghost" type="button" data-webhook-test>Send webhook test</button>
+</div>
+
+<p class="logo-kicker">Destination integration grid</p>
+<ul class="logo-grid">
+  <li>PostgreSQL</li>
+  <li>Supabase</li>
+  <li>Airtable</li>
+  <li>QuickBooks</li>
+  <li>Xero</li>
+  <li>AWS S3</li>
+  <li>Google Sheets</li>
+  <li>n8n Webhooks</li>
+</ul>
+
+<div class="grid-2">
+  <article class="panel">
+    <header><h2>Recent files</h2></header>
+    <ul class="queue">
+      <li>
+        <div><strong>approved-18aug.csv</strong><span>28 rows · ready</span></div>
+        <button class="link" type="button" data-download="csv">Download</button>
+      </li>
+      <li>
+        <div><strong>invoices-week.json</strong><span>Validated InvoiceExtract</span></div>
+        <button class="link" type="button" data-download="json">Download</button>
+      </li>
+      <li>
+        <div><strong>webhook test</strong><span>POST /extract · last 200 OK</span></div>
+        <button class="link" type="button" data-webhook-test>Send again</button>
+      </li>
+    </ul>
+  </article>
+  <article class="panel">
+    <header><h2>Destinations</h2></header>
+    <ul class="queue">
+      <li>
+        <div><strong>CSV / JSON download</strong><span>Always on</span></div>
+        <button class="link" type="button" data-download="json">Run</button>
+      </li>
+      <li>
+        <div><strong>HTTPS webhook</strong><span>Test endpoint ready</span></div>
+        <button class="link" type="button" data-webhook-test>Ping</button>
+      </li>
+      <li>
+        <div><strong>PostgreSQL</strong><span>Matches the Pydantic schema on review</span></div>
+        <a class="link" href="{% url 'review' %}?doc=invoice">See schema</a>
+      </li>
+    </ul>
+  </article>
+</div>
+{% endblock %}

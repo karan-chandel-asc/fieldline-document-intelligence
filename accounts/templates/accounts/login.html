@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Fieldline{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+{% block body %}
+<div class="auth-shell">
+  <a class="logo" href="{% url 'landing' %}">Fieldline</a>
+
+  <div class="auth-card" data-auth-card>
+    <div data-auth-panel="signin">
+      <p class="eyebrow">Workspace</p>
+      <h1>Sign in</h1>
+      <p class="auth-lead">{% if next and next != "/app/" %}Sign in to continue to the page you opened.{% else %}Use your work email to open the document inbox.{% endif %}</p>
+      {% if created %}
+      <div class="auth-notice">
+        <strong>Account created</strong>
+        <span>Sign in with the email you just registered.</span>
+      </div>
+      {% endif %}
+      <div class="auth-notice" data-auth-error hidden>
+        <strong>Could not sign in</strong>
+        <span data-auth-error-text></span>
+      </div>
+      <form class="stack" id="login-form" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}" />
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" id="email" value="demo@fieldline.app" autocomplete="username" />
+        </label>
+        <label class="field">
+          <span class="field-head">Password <button class="text-btn" type="button" data-auth-show="forgot">Forgot?</button></span>
+          <input type="password" name="password" id="password" value="demo" autocomplete="current-password" />
+        </label>
+        <button class="btn btn-dark btn-full" type="submit">Continue</button>
+      </form>
+      <p class="auth-foot">New here? <a class="link" href="{% url 'signup' %}">Create an account</a></p>
+    </div>
+
+    <div data-auth-panel="forgot" hidden>
+      <p class="eyebrow">Account</p>
+      <h1>Reset password</h1>
+      <p class="auth-lead">We’ll email a reset link to the address on the account. Wire this to your backend later.</p>
+      <form class="stack" action="#" method="post" onsubmit="return false;">
+        <label class="field">
+          <span>Work email</span>
+          <input type="email" value="demo@fieldline.app" autocomplete="email" />
+        </label>
+        <button class="btn btn-dark btn-full" type="button" data-send-reset>Send reset link</button>
+        <button class="btn btn-ghost btn-full" type="button" data-auth-show="signin">Back to sign in</button>
+      </form>
+    </div>
+
+    <div data-auth-panel="sent" hidden>
+      <p class="eyebrow">Check email</p>
+      <h1>Link sent</h1>
+      <p class="auth-lead">If <strong>demo@fieldline.app</strong> has an account, the reset email is on its way. This is UI-only for now.</p>
+      <div class="auth-notice">
+        <strong>Next step</strong>
+        <span>Open the inbox, then return here to sign in with a new password.</span>
+      </div>
+      <button class="btn btn-dark btn-full" type="button" data-auth-show="signin">Back to sign in</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const submitBtn = form.querySelector("button[type=submit]");
+    const errorBox = document.querySelector("[data-auth-error]");
+    const errorText = document.querySelector("[data-auth-error-text]");
+    errorBox.hidden = true;
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch("{% url 'login_api' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": window.csrfToken(),
+        },
+        body: JSON.stringify({
+          email: form.email.value,
+          password: form.password.value,
+          next: form.next.value,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        errorText.textContent = result.message || "Invalid email or password";
+        errorBox.hidden = false;
+        if (window.toast) window.toast(result.message || "Could not sign in");
+        return;
+      }
+      window.location = (result.data && result.data.redirect) || "{% url 'dashboard' %}";
+    } catch (err) {
+      errorText.textContent = "Something went wrong. Please try again.";
+      errorBox.hidden = false;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}

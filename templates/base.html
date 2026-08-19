@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Fieldline{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:opsz,wght@9..144,500;9..144,650;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{% static 'css/app.css' %}" />
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% block body %}{% endblock %}
+
+  <button class="api-fab" type="button" data-toggle-api>View cURL / Python SDK</button>
+  <aside class="api-drawer" data-api-drawer hidden>
+    <header>
+      <h2>Call the extract API</h2>
+      <button class="modal-x" type="button" data-toggle-api aria-label="Close"></button>
+    </header>
+    <div class="view-toggle" role="tablist">
+      <button type="button" class="is-on" data-api-tab="curl">cURL</button>
+      <button type="button" data-api-tab="python">Python SDK</button>
+    </div>
+    <pre class="code-block" data-api-panel="curl">curl -X POST "https://api.fieldline.ai/v1/extract" \
+  -H "Authorization: Bearer test_key" \
+  -F "file=@invoice.pdf"</pre>
+    <pre class="code-block" data-api-panel="python" hidden>import httpx
+
+r = httpx.post(
+    "https://api.fieldline.ai/v1/extract",
+    headers={"Authorization": "Bearer test_key"},
+    files={"file": open("invoice.pdf", "rb")},
+)
+print(r.json())</pre>
+    <button class="btn btn-dark btn-full" type="button" data-copy-api>Copy snippet</button>
+  </aside>
+
+  <div class="toast" hidden data-toast></div>
+  <script src="{% static 'js/app.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

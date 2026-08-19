@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Create account — Fieldline{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+{% block body %}
+<div class="auth-shell">
+  <a class="logo" href="{% url 'landing' %}">Fieldline</a>
+
+  <div class="auth-card">
+    <p class="eyebrow">Workspace</p>
+    <h1>Create account</h1>
+    <p class="auth-lead">Set up access to the document inbox. Use your work email.</p>
+    <div class="auth-notice" data-auth-error hidden>
+      <strong>Could not create account</strong>
+      <span data-auth-error-text></span>
+    </div>
+    <form class="stack" id="signup-form" novalidate>
+      {% csrf_token %}
+      <label class="field">
+        <span>Full name</span>
+        <input type="text" name="full_name" id="full_name" autocomplete="name" />
+      </label>
+      <label class="field">
+        <span>Work email</span>
+        <input type="email" name="email" id="email" autocomplete="email" />
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" name="password" id="password" autocomplete="new-password" />
+      </label>
+      <label class="field">
+        <span>Confirm password</span>
+        <input type="password" name="confirm_password" id="confirm_password" autocomplete="new-password" />
+      </label>
+      <button class="btn btn-dark btn-full" type="submit">Create account</button>
+    </form>
+    <p class="auth-foot">Already have an account? <a class="link" href="{% url 'login' %}">Sign in</a></p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  document.getElementById("signup-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const submitBtn = form.querySelector("button[type=submit]");
+    const errorBox = document.querySelector("[data-auth-error]");
+    const errorText = document.querySelector("[data-auth-error-text]");
+    errorBox.hidden = true;
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch("{% url 'signup_api' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": window.csrfToken(),
+        },
+        body: JSON.stringify({
+          full_name: form.full_name.value,
+          email: form.email.value,
+          password: form.password.value,
+          confirm_password: form.confirm_password.value,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        errorText.textContent = result.message || "Registration failed";
+        errorBox.hidden = false;
+        if (window.toast) window.toast(result.message || "Could not create account");
+        return;
+      }
+      window.location = "{% url 'login' %}?created=1";
+    } catch (err) {
+      errorText.textContent = "Something went wrong. Please try again.";
+      errorBox.hidden = false;
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}

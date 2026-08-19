@@ -1,0 +1,101 @@
+{% extends "app/base_app.html" %}
+{% block crumb %}Templates{% endblock %}
+{% block heading %}Schemas{% endblock %}
+{% block top_actions %}
+<button class="btn btn-ghost" type="button" data-open="modal-schema">Load preset</button>
+<button class="btn btn-dark" type="button" data-save-schema>Save schema</button>
+{% endblock %}
+{% block app_content %}
+<p class="lead">Define extraction on the fly. Same pipeline can map invoices, receipts, medical records, or deeds — the worker just reads this schema.</p>
+
+<div class="schema-layout">
+  <div>
+    <p class="pane-label" style="padding:0 0 0.8rem">Presets</p>
+    <div class="schema-grid">
+      <button class="schema-card is-active" type="button" data-load-schema="invoice">
+        <h2>Invoice</h2>
+        <p>Vendor, dates, PO, currency, totals, line items.</p>
+      </button>
+      <button class="schema-card" type="button" data-load-schema="receipt">
+        <h2>Receipt</h2>
+        <p>Merchant, timestamp, tax, payment method.</p>
+      </button>
+      <button class="schema-card" type="button" data-load-schema="bol">
+        <h2>Bill of lading</h2>
+        <p>Shipper, consignee, PRO, weight.</p>
+      </button>
+      <button class="schema-card" type="button" data-load-schema="blank">
+        <h2>Blank</h2>
+        <p>Start from zero — add Tax ID, parcel number, ICD codes…</p>
+      </button>
+    </div>
+  </div>
+
+  <article class="panel builder" data-schema-builder>
+    <header>
+      <h2>Custom field map</h2>
+    </header>
+    <label class="field">
+      <span>Schema name</span>
+      <input data-schema-name value="Invoice" />
+    </label>
+    <p class="logo-kicker">Quick add</p>
+    <div class="chip-row">
+      <button type="button" data-quick-field="tax_id">+ Tax ID</button>
+      <button type="button" data-quick-field="gl_code">+ GL Code</button>
+      <button type="button" data-quick-field="tracking_number">+ Tracking Number</button>
+    </div>
+    <div class="builder-add">
+      <label class="field">
+        <span>Field name</span>
+        <input data-new-key placeholder="e.g. tax_id" />
+      </label>
+      <label class="field">
+        <span>Type</span>
+        <select data-new-type>
+          <option value="string">String</option>
+          <option value="number">Number</option>
+          <option value="date">Date</option>
+          <option value="currency">Currency</option>
+        </select>
+      </label>
+      <label class="check builder-req"><input type="checkbox" data-new-required checked /> Required</label>
+      <button class="btn btn-dark" type="button" data-add-field>+ Add Custom Field</button>
+    </div>
+    <div class="table-wrap">
+      <table class="table compact">
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Required</th><th></th></tr>
+        </thead>
+        <tbody data-field-table>
+          <tr>
+            <td>vendor</td>
+            <td>string</td>
+            <td>Yes</td>
+            <td><button class="link" type="button" data-remove-field>Remove</button></td>
+          </tr>
+          <tr>
+            <td>invoice_no</td>
+            <td>string</td>
+            <td>Yes</td>
+            <td><button class="link" type="button" data-remove-field>Remove</button></td>
+          </tr>
+          <tr>
+            <td>po_number</td>
+            <td>string</td>
+            <td>No</td>
+            <td><button class="link" type="button" data-remove-field>Remove</button></td>
+          </tr>
+          <tr>
+            <td>total</td>
+            <td>currency</td>
+            <td>Yes</td>
+            <td><button class="link" type="button" data-remove-field>Remove</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">This table is the contract your Vision LLM + Pydantic layer will validate against.</p>
+  </article>
+</div>
+{% endblock %}
