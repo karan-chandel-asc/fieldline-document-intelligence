@@ -9,10 +9,6 @@
     <p class="eyebrow">Workspace</p>
     <h1>Create account</h1>
     <p class="auth-lead">Set up access to the document inbox. Use your work email.</p>
-    <div class="auth-notice" data-auth-error hidden>
-      <strong>Could not create account</strong>
-      <span data-auth-error-text></span>
-    </div>
     <form class="stack" id="signup-form" novalidate>
       {% csrf_token %}
       <label class="field">
@@ -43,9 +39,6 @@
     e.preventDefault();
     const form = e.target;
     const submitBtn = form.querySelector("button[type=submit]");
-    const errorBox = document.querySelector("[data-auth-error]");
-    const errorText = document.querySelector("[data-auth-error-text]");
-    errorBox.hidden = true;
     submitBtn.disabled = true;
     try {
       const res = await fetch("{% url 'signup_api' %}", {
@@ -63,15 +56,12 @@
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
-        errorText.textContent = result.message || "Registration failed";
-        errorBox.hidden = false;
         if (window.toast) window.toast(result.message || "Could not create account");
         return;
       }
       window.location = "{% url 'login' %}?created=1";
     } catch (err) {
-      errorText.textContent = "Something went wrong. Please try again.";
-      errorBox.hidden = false;
+      if (window.toast) window.toast("Something went wrong. Please try again.");
     } finally {
       submitBtn.disabled = false;
     }

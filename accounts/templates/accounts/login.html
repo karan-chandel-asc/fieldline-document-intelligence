@@ -10,16 +10,6 @@
       <p class="eyebrow">Workspace</p>
       <h1>Sign in</h1>
       <p class="auth-lead">{% if next and next != "/app/" %}Sign in to continue to the page you opened.{% else %}Use your work email to open the document inbox.{% endif %}</p>
-      {% if created %}
-      <div class="auth-notice">
-        <strong>Account created</strong>
-        <span>Sign in with the email you just registered.</span>
-      </div>
-      {% endif %}
-      <div class="auth-notice" data-auth-error hidden>
-        <strong>Could not sign in</strong>
-        <span data-auth-error-text></span>
-      </div>
       <form class="stack" id="login-form" novalidate>
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}" />
@@ -65,13 +55,13 @@
 {% endblock %}
 {% block extra_js %}
 <script>
+  {% if created %}
+  if (window.toast) window.toast("Account created. Sign in with the email you registered.");
+  {% endif %}
   document.getElementById("login-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const form = e.target;
     const submitBtn = form.querySelector("button[type=submit]");
-    const errorBox = document.querySelector("[data-auth-error]");
-    const errorText = document.querySelector("[data-auth-error-text]");
-    errorBox.hidden = true;
     submitBtn.disabled = true;
     try {
       const res = await fetch("{% url 'login_api' %}", {
@@ -88,15 +78,12 @@
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
-        errorText.textContent = result.message || "Invalid email or password";
-        errorBox.hidden = false;
         if (window.toast) window.toast(result.message || "Could not sign in");
         return;
       }
       window.location = (result.data && result.data.redirect) || "{% url 'dashboard' %}";
     } catch (err) {
-      errorText.textContent = "Something went wrong. Please try again.";
-      errorBox.hidden = false;
+      if (window.toast) window.toast("Something went wrong. Please try again.");
     } finally {
       submitBtn.disabled = false;
     }
