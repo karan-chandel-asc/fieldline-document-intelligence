@@ -58,6 +58,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn-ghost { border-color: var(--line); }
 .btn-ghost:hover { background: var(--paper-2); }
 .btn-full { width: 100%; }
+.btn[hidden],
+.hint[hidden],
+iframe[hidden] {
+  display: none !important;
+}
 
 .pill {
   display: inline-flex;
@@ -696,6 +701,13 @@ a.pill, button.pill {
 .top-right { flex-wrap: nowrap; }
 .inbox-table-wrap, .table-wrap { overflow-x: auto; }
 .table-wrap .table { min-width: 560px; }
+.table-wrap .data-table { min-width: 720px; }
+.data-table th, .data-table td {
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 :focus-visible {
   outline: 2px solid var(--copper);
@@ -735,6 +747,19 @@ a.pill, button.pill {
   padding: 0.9rem;
   min-height: 58vh;
 }
+.scan-stage.is-pdf {
+  padding: 0;
+  background: #ece7dc;
+  overflow: hidden;
+}
+.pdf-frame {
+  width: 100%;
+  min-height: 64vh;
+  border: 0;
+  background: #fff;
+  display: block;
+}
+.modal .pdf-frame { min-height: 52vh; }
 .scan-stage.is-skew-wrap { background: #c9bfae; overflow: hidden; padding: 1.6rem 1rem; }
 .scan-page {
   position: relative;
@@ -915,6 +940,22 @@ a.pill, button.pill {
 }
 .schema-layout { display: grid; gap: 1.2rem; }
 @media (min-width: 980px) { .schema-layout { grid-template-columns: 0.9fr 1.1fr; align-items: start; } }
+.schema-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+@media (min-width: 980px) {
+  .schema-list { max-height: calc(100vh - 230px); }
+}
+.schema-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.schema-card-head h2 { margin: 0; }
+.schema-card .logo-kicker { margin: 0; }
 .builder { display: grid; gap: 0.85rem; }
 .builder-add {
   display: grid;
@@ -1026,6 +1067,19 @@ a.pill, button.pill {
   font-weight: 600;
   font-size: 0.88rem;
 }
+.logo-grid.is-soon li {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.logo-grid.is-soon li span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
 .scan-invoice.is-messy { transform: rotate(0.8deg); filter: contrast(1.06); }
 .scan-receipt.is-faded { filter: contrast(0.66) brightness(1.14) saturate(0.65); }
 .review { position: relative; }
@@ -1087,6 +1141,7 @@ a.pill, button.pill {
   border: 1px solid var(--line);
 }
 .ingest-stages li.is-on { background: var(--pine); color: #fff; border-color: var(--pine); }
+.hint[data-review-error] { color: var(--warn); padding: 0 1rem; }
 .verify-banner {
   display: flex;
   flex-wrap: wrap;

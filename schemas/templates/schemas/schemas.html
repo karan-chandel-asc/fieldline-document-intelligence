@@ -2,32 +2,20 @@
 {% block crumb %}Templates{% endblock %}
 {% block heading %}Schemas{% endblock %}
 {% block top_actions %}
-<button class="btn btn-ghost" type="button" data-open="modal-schema">Load preset</button>
+<button class="btn btn-ghost" type="button" data-load-schema="blank">New blank</button>
 <button class="btn btn-dark" type="button" data-save-schema>Save schema</button>
 {% endblock %}
 {% block app_content %}
 <p class="lead">Define extraction on the fly. Same pipeline can map invoices, receipts, medical records, or deeds — the worker just reads this schema.</p>
 
-<div class="schema-layout">
+<div class="schema-layout" data-schema-page data-save-url="{% url 'schema_save_api' %}" data-list-url="{% url 'schema_list_api' %}" data-delete-url="{% url 'schema_delete_api' 0 %}">
   <div>
-    <p class="pane-label" style="padding:0 0 0.8rem">Presets</p>
-    <div class="schema-grid">
-      <button class="schema-card is-active" type="button" data-load-schema="invoice">
-        <h2>Invoice</h2>
-        <p>Vendor, dates, PO, currency, totals, line items.</p>
-      </button>
-      <button class="schema-card" type="button" data-load-schema="receipt">
-        <h2>Receipt</h2>
-        <p>Merchant, timestamp, tax, payment method.</p>
-      </button>
-      <button class="schema-card" type="button" data-load-schema="bol">
-        <h2>Bill of lading</h2>
-        <p>Shipper, consignee, PRO, weight.</p>
-      </button>
-      <button class="schema-card" type="button" data-load-schema="blank">
-        <h2>Blank</h2>
-        <p>Start from zero — add Tax ID, parcel number, ICD codes…</p>
-      </button>
+    <p class="pane-label" style="padding:0 0 0.8rem">Saved schemas</p>
+    <div class="schema-list" data-schema-list>
+      <div class="schema-grid" data-schema-grid></div>
+      <p class="hint" data-schema-empty hidden>No saved schemas yet. Build one and hit Save.</p>
+      <p class="hint" data-schema-loading hidden>Loading schemas…</p>
+      <div data-schema-sentinel></div>
     </div>
   </div>
 
@@ -39,6 +27,17 @@
       <span>Schema name</span>
       <input data-schema-name value="Invoice" />
     </label>
+    <label class="field">
+      <span>Description</span>
+      <input data-schema-description value="Vendor, dates, PO, currency, totals, line items." />
+    </label>
+    <p class="logo-kicker">Presets</p>
+    <div class="chip-row">
+      <button type="button" data-load-schema="invoice">Invoice</button>
+      <button type="button" data-load-schema="receipt">Receipt</button>
+      <button type="button" data-load-schema="bol">Bill of lading</button>
+      <button type="button" data-load-schema="blank">Blank</button>
+    </div>
     <p class="logo-kicker">Quick add</p>
     <div class="chip-row">
       <button type="button" data-quick-field="tax_id">+ Tax ID</button>
@@ -55,8 +54,11 @@
         <select data-new-type>
           <option value="string">String</option>
           <option value="number">Number</option>
+          <option value="boolean">Boolean</option>
           <option value="date">Date</option>
-          <option value="currency">Currency</option>
+          <option value="time">Time</option>
+          <option value="datetime">Datetime</option>
+          <option value="array">Array</option>
         </select>
       </label>
       <label class="check builder-req"><input type="checkbox" data-new-required checked /> Required</label>
@@ -88,7 +90,7 @@
           </tr>
           <tr>
             <td>total</td>
-            <td>currency</td>
+            <td>number</td>
             <td>Yes</td>
             <td><button class="link" type="button" data-remove-field>Remove</button></td>
           </tr>

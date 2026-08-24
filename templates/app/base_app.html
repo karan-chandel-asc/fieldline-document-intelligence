@@ -8,6 +8,7 @@
     <a class="logo logo-light" href="{% url 'landing' %}">Fieldline</a>
     <nav class="side-nav">
       <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}is-on{% endif %}">Overview</a>
+      <a href="{% url 'records' %}" class="{% if request.resolver_match.url_name == 'records' %}is-on{% endif %}">Data</a>
       <a href="{% url 'inbox' %}" class="{% if request.resolver_match.url_name == 'inbox' %}is-on{% endif %}">Inbox</a>
       <a href="{% url 'review' %}" class="{% if request.resolver_match.url_name == 'review' %}is-on{% endif %}">Review</a>
       <a href="{% url 'exceptions' %}" class="{% if request.resolver_match.url_name == 'exceptions' %}is-on{% endif %}">Exceptions</a>
@@ -15,7 +16,7 @@
       <a href="{% url 'exports' %}" class="{% if request.resolver_match.url_name == 'exports' %}is-on{% endif %}">Exports</a>
     </nav>
     <button class="side-help" type="button" data-open="modal-help">Need help?</button>
-    <a class="btn btn-hire btn-full" href="{{ FIVERR_GIG_URL }}" target="_blank" rel="noopener">Hire on Fiverr</a>
+    {% comment %} <a class="btn btn-hire btn-full" href="{{ FIVERR_GIG_URL }}" target="_blank" rel="noopener">Hire on Fiverr</a> {% endcomment %}
   </aside>
 
   <div class="main">
@@ -32,7 +33,7 @@
         <button class="icon-btn has-dot" type="button" data-open="modal-alerts" aria-label="Alerts" title="Alerts">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
         </button>
-        <button class="avatar" type="button" data-open="modal-account" title="Account">KC</button>
+        <button class="avatar" type="button" data-open="modal-account" title="Account">{% if request.user.is_authenticated %}{{ request.user.username|slice:":2"|upper }}{% else %}G{% endif %}</button>
       </div>
     </header>
     <div class="main-body">
@@ -45,24 +46,21 @@
 <div class="modal-root" data-modal-root hidden>
   <div class="modal-backdrop" data-close-modal></div>
 
-  <div class="modal" id="modal-upload" hidden>
+  <div class="modal" id="modal-upload" hidden data-upload-url="{% url 'documents_upload_api' %}" data-job-url="{% url 'extraction_job_api' 0 %}" data-schema-list-url="{% url 'schema_list_api' %}" data-inbox-url="{% url 'inbox' %}">
     <header>
       <h2>Upload documents</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
       <div class="dropzone" data-dropzone>
-        <p><strong>Drop PDFs or images</strong><br>or click to browse</p>
-        <input type="file" accept=".pdf,image/*" multiple hidden data-file-input />
+        <p><strong>Drop PDFs</strong><br>or click to browse. Schema is optional.</p>
+        <input type="file" accept="application/pdf,.pdf" multiple hidden data-file-input />
       </div>
+      <p class="hint" data-upload-files hidden></p>
       <label class="field">
-        <span>Schema</span>
-        <select>
-          <option>Auto-detect</option>
-          <option>Invoice</option>
-          <option>Receipt</option>
-          <option>Bill of lading</option>
-          <option>Contract</option>
+        <span>Schema (optional)</span>
+        <select data-upload-schema>
+          <option value="">No schema</option>
         </select>
       </label>
     </div>
@@ -72,25 +70,22 @@
     </footer>
   </div>
 
-  <div class="modal" id="modal-search" hidden>
+  <div class="modal" id="modal-search" hidden data-list-url="{% url 'documents_list_api' %}" data-review-url="{% url 'review' %}">
     <header>
       <div>
         <h2>Search workspace</h2>
-        <p class="modal-sub">Jump to a document or schema.</p>
+        <p class="modal-sub">Jump to a document by filename, vendor, or schema.</p>
       </div>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
-      <input class="search wide" type="search" placeholder="Vendor, invoice no, filename…" />
-      <ul class="queue">
-        <li><div><strong>INV-10482.pdf</strong><span>Harbor Freight · needs review</span></div><a class="link" href="{% url 'review' %}?doc=invoice">Open</a></li>
-        <li><div><strong>BOL-2291.pdf</strong><span>Northline · skewed scan</span></div><a class="link" href="{% url 'review' %}?doc=bol">Open</a></li>
-        <li><div><strong>RCP-8831.pdf</strong><span>Handwritten receipt</span></div><a class="link" href="{% url 'review' %}?doc=receipt">Open</a></li>
-      </ul>
+      <input class="search wide" type="search" placeholder="Vendor, invoice no, filename…" data-workspace-search />
+      <ul class="queue" data-search-results></ul>
+      <p class="hint" data-search-empty>Type to search your documents.</p>
     </div>
   </div>
 
-  <div class="modal" id="modal-alerts" hidden>
+  <div class="modal" id="modal-alerts" hidden data-overview-url="{% url 'dashboard_overview_api' %}" data-review-url="{% url 'review' %}" data-inbox-url="{% url 'inbox' %}" data-exceptions-url="{% url 'exceptions' %}">
     <header>
       <div>
         <h2>Alerts</h2>
@@ -99,19 +94,21 @@
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
-      <ul class="queue">
-        <li><div><strong>3 documents waiting review</strong><span>Oldest is 2 hours ago</span></div><a class="link" href="{% url 'review' %}?doc=invoice">Go</a></li>
-        <li><div><strong>Export to Sheets failed</strong><span>Webhook 502 · retry available</span></div><a class="link" href="{% url 'exports' %}">Go</a></li>
-        <li><div><strong>New schema suggested</strong><span>Contract layout looks new</span></div><a class="link" href="{% url 'schemas' %}">Go</a></li>
-      </ul>
+      <ul class="queue" data-alerts-list></ul>
+      <p class="hint" data-alerts-empty>You're all caught up.</p>
     </div>
   </div>
 
   <div class="modal modal-sm" id="modal-account" hidden>
     <header>
       <div>
-        <h2>Karan Chandel</h2>
-        <p class="modal-sub">demo@fieldline.app</p>
+        {% if request.user.is_authenticated %}
+        <h2>{{ request.user.get_full_name|default:request.user.username }}</h2>
+        <p class="modal-sub">{{ request.user.email|default:"Signed in" }}</p>
+        {% else %}
+        <h2>Guest</h2>
+        <p class="modal-sub"><a href="{% url 'login' %}">Sign in</a> to keep extractions on your account</p>
+        {% endif %}
       </div>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
@@ -119,7 +116,11 @@
       <a href="{% url 'schemas' %}">Extraction schemas</a>
       <button type="button" data-open="modal-invite">Invite teammate</button>
       <a href="{% url 'landing' %}">View marketing site</a>
+      {% if request.user.is_authenticated %}
       <a href="{% url 'logout' %}" data-logout="{% url 'logout_api' %}">Sign out</a>
+      {% else %}
+      <a href="{% url 'login' %}">Sign in</a>
+      {% endif %}
     </div>
   </div>
 
@@ -132,11 +133,10 @@
       <p>Send validated fields to a destination. Low-confidence values stay flagged in the payload.</p>
       <label class="field">
         <span>Destination</span>
-        <select>
-          <option>PostgreSQL</option>
-          <option>JSON download</option>
-          <option>CSV / Excel</option>
-          <option>Webhook</option>
+        <select data-approve-dest>
+          <option value="json">JSON download</option>
+          <option value="csv">CSV / Excel</option>
+          <option value="webhook">Webhook</option>
         </select>
       </label>
     </div>
@@ -154,7 +154,7 @@
     <div class="modal-body">
       <label class="field">
         <span>Reason</span>
-        <select>
+        <select data-reject-reason>
           <option>Wrong document type</option>
           <option>Unreadable scan</option>
           <option>Missing pages</option>
@@ -164,7 +164,7 @@
       </label>
       <label class="field">
         <span>Note</span>
-        <textarea rows="3" placeholder="What should happen next?"></textarea>
+        <textarea rows="3" placeholder="What should happen next?" data-reject-note></textarea>
       </label>
     </div>
     <footer>
@@ -173,7 +173,7 @@
     </footer>
   </div>
 
-  <div class="modal" id="modal-export" hidden>
+  <div class="modal" id="modal-export" hidden data-create-url="{% url 'export_create_api' %}">
     <header>
       <h2>New export</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
@@ -181,11 +181,18 @@
     <div class="modal-body">
       <label class="field">
         <span>Format</span>
-        <select><option>CSV</option><option>JSON</option><option>Excel</option></select>
+        <select data-export-format>
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+        </select>
       </label>
       <label class="field">
         <span>Range</span>
-        <select><option>Approved today</option><option>This week</option><option>Selected documents</option></select>
+        <select data-export-range>
+          <option value="today">Extracted today</option>
+          <option value="week">This week</option>
+          <option value="all">All extracted</option>
+        </select>
       </label>
     </div>
     <footer>
@@ -201,20 +208,34 @@
     </header>
     <div class="modal-body">
       <label class="field">
-        <span>Type</span>
-        <select><option>Any</option><option>Invoice</option><option>Receipt</option><option>BOL</option><option>Contract</option></select>
+        <span>Schema</span>
+        <select data-filter-schema>
+          <option value="">Any</option>
+        </select>
       </label>
       <label class="field">
         <span>Status</span>
-        <select><option>Any</option><option>Queued</option><option>Needs review</option><option>Approved</option><option>Rejected</option></select>
+        <select data-filter-status>
+          <option value="all">Any</option>
+          <option value="queued">Queued</option>
+          <option value="processing">Processing</option>
+          <option value="needs_review">Needs review</option>
+          <option value="extracted">Extracted</option>
+          <option value="approved">Approved</option>
+          <option value="failed">Failed</option>
+        </select>
       </label>
       <label class="field">
         <span>Received</span>
-        <select><option>Any time</option><option>Today</option><option>Last 7 days</option></select>
+        <select data-filter-received>
+          <option value="">Any time</option>
+          <option value="today">Today</option>
+          <option value="7d">Last 7 days</option>
+        </select>
       </label>
     </div>
     <footer>
-      <button class="btn btn-ghost" type="button" data-close-modal>Reset</button>
+      <button class="btn btn-ghost" type="button" data-reset-filters>Reset</button>
       <button class="btn btn-dark" type="button" data-apply-filters>Apply filters</button>
     </footer>
   </div>
@@ -242,19 +263,21 @@
 
   <div class="modal" id="modal-schema-edit" hidden>
     <header>
-      <h2>Edit schema</h2>
+      <h2>Change schema</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
-      <p class="hint">Invoice · 6 fields. Toggle required flags (UI only).</p>
-      <label class="check"><input type="checkbox" checked /> vendor — required</label>
-      <label class="check"><input type="checkbox" checked /> invoice_no — required</label>
-      <label class="check"><input type="checkbox" /> po_number — optional</label>
-      <label class="check"><input type="checkbox" checked /> total — required</label>
+      <p class="hint">Assign a saved schema, then re-run extraction on this PDF.</p>
+      <label class="field">
+        <span>Schema</span>
+        <select data-reassign-schema>
+          <option value="">Select a schema</option>
+        </select>
+      </label>
     </div>
     <footer>
-      <button class="btn btn-ghost" type="button" data-close-modal>Close</button>
-      <button class="btn btn-dark" type="button" data-save-schema>Save changes</button>
+      <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
+      <button class="btn btn-dark" type="button" data-confirm-schema-change>Save and retry</button>
     </footer>
   </div>
 
@@ -283,10 +306,12 @@
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
-      <article class="paper">
+      <iframe class="pdf-frame" data-preview-frame hidden title="Document preview"></iframe>
+      <p class="hint" data-preview-missing hidden>Original PDF is not available.</p>
+      <article class="paper" data-preview-placeholder>
         <p class="paper-kicker">Harbor Freight Lines</p>
         <h2>Invoice INV-10482</h2>
-        <p>Larger preview for operators. Swap this for a PDF canvas in your backend.</p>
+        <p>Sample preview. Live documents open the uploaded PDF here.</p>
       </article>
     </div>
   </div>
@@ -312,7 +337,7 @@
     </footer>
   </div>
 
-  <div class="modal" id="modal-webhook" hidden>
+  <div class="modal" id="modal-webhook" hidden data-webhook-api="{% url 'webhook_api' %}" data-webhook-test-api="{% url 'webhook_test_api' %}">
     <header>
       <h2>Webhook destination</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
@@ -320,11 +345,7 @@
     <div class="modal-body">
       <label class="field">
         <span>URL</span>
-        <input placeholder="https://your-api.com/fieldline" />
-      </label>
-      <label class="field">
-        <span>Secret</span>
-        <input placeholder="whsec_…" />
+        <input data-webhook-url-input placeholder="https://your-api.com/fieldline" />
       </label>
     </div>
     <footer>
@@ -333,7 +354,7 @@
     </footer>
   </div>
 
-  <div class="modal" id="modal-retry" hidden>
+  <div class="modal" id="modal-retry" hidden data-retry-url="{% url 'document_retry_api' 0 %}" data-detail-url="{% url 'document_detail_api' 0 %}">
     <header>
       <h2>Retry job</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
@@ -353,8 +374,8 @@
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
-      <p>Click a field on the review screen to highlight it on the scan. Try the three sample documents from the landing page.</p>
-      <a class="link" href="{% url 'review' %}?doc=invoice">Open invoice review</a>
+      <p>Click a field on the review screen to highlight it on the scan. Upload PDFs from Inbox to extract with your schema.</p>
+      <a class="link" href="{% url 'inbox' %}">Open inbox</a>
     </div>
     <footer>
       <button class="btn btn-dark" type="button" data-close-modal>Got it</button>
