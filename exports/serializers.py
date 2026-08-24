@@ -40,5 +40,5 @@ class ExportBatchSerializer(serializers.ModelSerializer):
 class WebhookDestinationSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebhookDestination
-        fields = ("id", "url", "secret", "last_status")
+        fields = ("id", "url", "last_status")
         read_only_fields = ("id", "last_status")

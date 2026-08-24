@@ -35,8 +35,6 @@ class RecordService:
             schema_name = data.get("schema_name") or ""
             if not schema_name and document and document.schema:
                 schema_name = document.schema.schema_name
-            if not schema_name:
-                schema_name = "Auto extract"
 
             fields = {
                 "document": document,

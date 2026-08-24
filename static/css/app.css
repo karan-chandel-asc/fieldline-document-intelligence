@@ -58,6 +58,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn-ghost { border-color: var(--line); }
 .btn-ghost:hover { background: var(--paper-2); }
 .btn-full { width: 100%; }
+.btn[hidden],
+.hint[hidden],
+iframe[hidden] {
+  display: none !important;
+}
 
 .pill {
   display: inline-flex;
@@ -1061,6 +1066,19 @@ a.pill, button.pill {
   text-align: center;
   font-weight: 600;
   font-size: 0.88rem;
+}
+.logo-grid.is-soon li {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.logo-grid.is-soon li span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--copper);
 }
 .scan-invoice.is-messy { transform: rotate(0.8deg); filter: contrast(1.06); }
 .scan-receipt.is-faded { filter: contrast(0.66) brightness(1.14) saturate(0.65); }

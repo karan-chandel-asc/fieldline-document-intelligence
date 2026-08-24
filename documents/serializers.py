@@ -49,7 +49,7 @@ class DocumentListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_schema_name(self, obj):
-        return obj.schema.schema_name if obj.schema else "Auto extract"
+        return obj.schema.schema_name if obj.schema else ""
 
     def get_summary(self, obj):
         data = obj.extracted_data or {}
@@ -161,4 +161,4 @@ class ExtractionJobSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_schema_name(self, obj):
-        return obj.schema.schema_name if obj.schema else "Auto extract"
+        return obj.schema.schema_name if obj.schema else ""

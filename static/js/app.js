@@ -259,9 +259,9 @@
     const pages = $("[data-review-pages]");
     const schemaLink = $("[data-review-schema]");
     if (heading) heading.textContent = doc.original_name || "Document";
-    if (crumb) crumb.textContent = `Human review · ${doc.schema_name || "Auto extract"}`;
+    if (crumb) crumb.textContent = doc.schema_name ? `Human review · ${doc.schema_name}` : "Human review";
     if (pages) pages.textContent = doc.status ? doc.status.replaceAll("_", " ") : "PDF";
-    if (schemaLink) schemaLink.textContent = doc.schema_id ? `${doc.schema_name} schema` : "Auto extract";
+    if (schemaLink) schemaLink.textContent = doc.schema_id ? `${doc.schema_name} schema` : "No schema";
 
     const frame = $("[data-pdf-frame]");
     const missing = $("[data-pdf-missing]");
@@ -360,13 +360,6 @@
     if (payloadEl) payloadEl.textContent = payloadText;
     const jsonView = $("[data-json-view]");
     if (jsonView) jsonView.textContent = payloadText;
-    const sqlText = doc.sql || "";
-    const sqlPayload = $("#sql-payload");
-    if (sqlPayload) sqlPayload.textContent = sqlText;
-    const sqlView = $("[data-sql-view]");
-    if (sqlView) sqlView.textContent = sqlText;
-    const ddlView = $("[data-ddl-view]");
-    if (ddlView) ddlView.textContent = doc.postgres || "";
     bindHighlight();
   };
 
@@ -389,7 +382,7 @@
     const id = liveRoot?.dataset.documentId;
     if (!id) {
       closeAll();
-      toast("Approved (UI). Payload ready for PostgreSQL.");
+      toast("Approved (UI). Payload ready to export.");
       return;
     }
     try {
@@ -402,14 +395,6 @@
           jsonToCsv(reviewPayloadText()),
           "text/csv"
         );
-      } else if (dest === "sql") {
-        const sql = ($("#sql-payload")?.textContent || $("[data-sql-view]")?.textContent || "").trim();
-        if (sql && navigator.clipboard) await navigator.clipboard.writeText(sql);
-        toast("Approved. PostgreSQL insert copied.");
-        window.setTimeout(() => {
-          window.location = liveRoot.dataset.inboxUrl || "/app/inbox/";
-        }, 400);
-        return;
       } else if (dest === "webhook") {
         if (typeof window.__testWebhook === "function") await window.__testWebhook();
         toast("Approved. Webhook test sent.");
@@ -796,7 +781,7 @@
         });
         if (current) select.value = current;
       };
-      fill($("[data-upload-schema]"), "No schema — auto extract");
+      fill($("[data-upload-schema]"), "No schema");
       fill($("[data-filter-schema]"), "Any");
       fill($("[data-reassign-schema]"), "Select a schema");
     } catch (err) {
@@ -1242,6 +1227,7 @@
       queued: ["Queued", "pill-muted"],
       processing: ["Processing", "pill-muted"],
       needs_review: ["Needs review", "pill-warn"],
+      extracted: ["Extracted", "pill-ok"],
       approved: ["Approved", "pill-ok"],
       failed: ["Failed", "pill-warn"],
     };
@@ -1277,11 +1263,11 @@
       }
       const actions = tr.querySelector("[data-actions]");
       const bits = [];
-      if (doc.status === "needs_review" || doc.status === "approved") {
+      if (doc.status === "needs_review" || doc.status === "extracted" || doc.status === "approved") {
         const link = document.createElement("a");
         link.className = "link";
         link.href = `${reviewUrl}?id=${doc.id}`;
-        link.textContent = "Review";
+        link.textContent = doc.status === "needs_review" ? "Review" : "Open";
         bits.push(link);
       }
       if (doc.status === "failed") {
@@ -1353,7 +1339,7 @@
         loading = false;
         if (loadingEl) loadingEl.hidden = true;
         if (emptyEl) emptyEl.hidden = Boolean(body && body.children.length);
-        if (moreBtn) moreBtn.hidden = !hasMore;
+        if (moreBtn) moreBtn.hidden = !(hasMore && body && body.children.length);
       }
     };
 
@@ -1501,10 +1487,8 @@
       if (!res.ok || !result.success) return;
       const data = result.data || {};
       const urlInput = $("[data-webhook-url-input]");
-      const secretInput = $("[data-webhook-secret-input]");
       const statusEl = $("[data-webhook-status]");
       if (urlInput) urlInput.value = data.url || "";
-      if (secretInput) secretInput.value = data.secret || "";
       if (statusEl) statusEl.textContent = data.last_status ? `Last ping ${data.last_status}` : "Save an endpoint to ping it";
     } catch (err) {
       /* ignore empty webhook */
@@ -1528,7 +1512,6 @@
         },
         body: JSON.stringify({
           url: $("[data-webhook-url-input]")?.value || "",
-          secret: $("[data-webhook-secret-input]")?.value || "",
         }),
       });
       const result = await res.json();
@@ -1743,7 +1726,7 @@
         const tds = [...tr.children];
         tds[0].querySelector("strong").textContent = row.original_name || "Document";
         tds[0].querySelector("span").textContent = (row.event || "").replace("fieldline.document.", "") || row.status || "";
-        tds[1].textContent = row.schema_name || "Auto extract";
+        tds[1].textContent = row.schema_name || "—";
         extra.forEach((key, i) => {
           tds[2 + i].textContent = cellValue(payload[key]);
           tds[2 + i].title = cellValue(payload[key]);
@@ -1796,7 +1779,7 @@
         loading = false;
         if (loadingEl) loadingEl.hidden = true;
         if (emptyEl) emptyEl.hidden = rows.length > 0;
-        if (moreBtn) moreBtn.hidden = !hasMore;
+        if (moreBtn) moreBtn.hidden = !(hasMore && rows.length > 0);
       }
     };
 

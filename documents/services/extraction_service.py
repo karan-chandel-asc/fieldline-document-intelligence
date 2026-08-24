@@ -50,7 +50,7 @@ class ExtractionService:
                     job.save(update_fields=["processed", "flagged_count", "updated_at"])
                 return False, message, document
 
-            document.status = Document.STATUS_NEEDS_REVIEW
+            document.status = self._status_for_result(schema, data)
             document.error_message = ""
             document.extracted_data = data or {}
             document.save(update_fields=["status", "error_message", "extracted_data", "updated_at"])
@@ -58,14 +58,15 @@ class ExtractionService:
                 job.processed += 1
                 job.success_count += 1
                 job.save(update_fields=["processed", "success_count", "updated_at"])
-            try:
-                from records.services.webhook_dispatch import WebhookDispatchService
+            if document.status == Document.STATUS_EXTRACTED:
+                try:
+                    from records.services.webhook_dispatch import WebhookDispatchService
 
-                WebhookDispatchService().dispatch_document(
-                    document, "fieldline.document.extracted"
-                )
-            except Exception as hook_error:
-                logger.error(f"Extracted-data webhook failed: {hook_error}")
+                    WebhookDispatchService().dispatch_document(
+                        document, "fieldline.document.extracted"
+                    )
+                except Exception as hook_error:
+                    logger.error(f"Extracted-data webhook failed: {hook_error}")
             return True, message, document
         except Exception as e:
             logger.error(f"Error processing document {document.id}: {e}")
@@ -77,6 +78,22 @@ class ExtractionService:
                 job.flagged_count += 1
                 job.save(update_fields=["processed", "flagged_count", "updated_at"])
             return False, str(e), document
+
+    def _status_for_result(self, schema, data):
+        if not schema:
+            return Document.STATUS_NEEDS_REVIEW
+        data = data if isinstance(data, dict) else {}
+        field_names = [
+            field.get("field_name")
+            for field in (schema.schema_fields or [])
+            if field.get("field_name")
+        ]
+        if not field_names:
+            return Document.STATUS_NEEDS_REVIEW
+        missing = [key for key in field_names if data.get(key) in (None, "")]
+        if missing:
+            return Document.STATUS_NEEDS_REVIEW
+        return Document.STATUS_EXTRACTED
 
     def retry_document(self, document_id):
         try:

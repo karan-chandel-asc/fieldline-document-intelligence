@@ -46,7 +46,7 @@ class DocumentUploadService:
                     )
                     document.file.save(uploaded.name, uploaded, save=True)
 
-            return True, "Extraction queued" if schema else "Auto extraction queued", job
+            return True, "Extraction queued", job
         except Exception as e:
             logger.error(f"Error queueing upload: {e}")
             return False, f"Error queueing upload: {e}", None
@@ -79,6 +79,7 @@ class DocumentUploadService:
                 "needs_review": [Document.STATUS_NEEDS_REVIEW],
                 "queued": [Document.STATUS_QUEUED, Document.STATUS_PROCESSING],
                 "processing": [Document.STATUS_PROCESSING],
+                "extracted": [Document.STATUS_EXTRACTED],
                 "approved": [Document.STATUS_APPROVED],
                 "failed": [Document.STATUS_FAILED],
             }

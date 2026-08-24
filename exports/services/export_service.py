@@ -23,7 +23,11 @@ class ExportService:
     def _exportable_docs(self, user, source_range):
         queryset = self._owned(
             Document.objects.select_related("schema").filter(
-                status__in=[Document.STATUS_NEEDS_REVIEW, Document.STATUS_APPROVED]
+                status__in=[
+                    Document.STATUS_NEEDS_REVIEW,
+                    Document.STATUS_EXTRACTED,
+                    Document.STATUS_APPROVED,
+                ]
             ),
             user,
         ).order_by("-created_at")
@@ -147,12 +151,10 @@ class ExportService:
             webhook = queryset.first()
             if webhook:
                 webhook.url = data["url"]
-                webhook.secret = data.get("secret") or ""
-                webhook.save(update_fields=["url", "secret", "updated_at"])
+                webhook.save(update_fields=["url", "updated_at"])
             else:
                 webhook = WebhookDestination.objects.create(
                     url=data["url"],
-                    secret=data.get("secret") or "",
                     created_by=created_by,
                 )
             return True, "Webhook saved", webhook
@@ -174,8 +176,6 @@ class ExportService:
                 }
             ).encode("utf-8")
             headers = {"Content-Type": "application/json"}
-            if webhook.secret:
-                headers["X-Fieldline-Secret"] = webhook.secret
             request = Request(webhook.url, data=payload, headers=headers, method="POST")
             try:
                 with urlopen(request, timeout=8) as response:

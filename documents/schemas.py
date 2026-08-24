@@ -33,6 +33,7 @@ class ListDocumentsQuery(BaseModel):
             "processing",
             "needs_review",
             "review",
+            "extracted",
             "approved",
             "failed",
         }
@@ -71,7 +72,7 @@ class UpdateDocumentSchema(BaseModel):
         if value in (None, ""):
             return None
         value = str(value).strip().lower()
-        if value not in {"needs_review", "approved", "failed"}:
+        if value not in {"needs_review", "extracted", "approved", "failed"}:
             raise ValueError("Invalid status")
         return value
 

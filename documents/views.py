@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from documents.pipelines.document_pipeline import DocumentPipeline
-from documents.samples import SAMPLES, build_sql
+from documents.samples import SAMPLES
 from documents.schemas import ListDocumentsQuery, UpdateDocumentSchema, UploadDocumentsSchema
 from documents.serializers import (
     DocumentDetailSerializer,
@@ -52,7 +52,6 @@ def review(request):
                 "document_id": document_id,
                 "doc": {**SAMPLE_DOC, "filename": "Loading…"},
                 "payload": "{}",
-                "sql": "",
             },
         )
 
@@ -60,7 +59,6 @@ def review(request):
     if key and key in SAMPLES:
         doc = SAMPLES[key]
         payload = json.dumps(doc["payload"], indent=2)
-        sql = build_sql(doc["table"], doc["payload"])
         return render(
             request,
             "documents/review.html",
@@ -70,7 +68,6 @@ def review(request):
                 "document_id": "",
                 "doc": doc,
                 "payload": payload,
-                "sql": sql,
             },
         )
 
@@ -83,7 +80,6 @@ def review(request):
             "document_id": "",
             "doc": SAMPLE_DOC,
             "payload": "{}",
-            "sql": "",
         },
     )
 

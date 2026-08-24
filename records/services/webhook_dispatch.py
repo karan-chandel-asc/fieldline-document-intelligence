@@ -16,19 +16,17 @@ class WebhookDispatchService:
             "event": event,
             "document_id": document.id,
             "filename": document.original_name,
-            "schema": document.schema.schema_name if document.schema else "Auto extract",
+            "schema": document.schema.schema_name if document.schema else "",
             "status": document.status,
             "payload": data,
         }
 
-    def post_json(self, url, payload, secret=""):
+    def post_json(self, url, payload):
         body = json.dumps(payload, default=str).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
             "User-Agent": "Fieldline-Webhook/1.0",
         }
-        if secret:
-            headers["X-Fieldline-Secret"] = secret
         request = Request(url, data=body, headers=headers, method="POST")
         try:
             with urlopen(request, timeout=8) as response:
@@ -70,7 +68,7 @@ class WebhookDispatchService:
         elif user is None:
             webhook = queryset.filter(created_by__isnull=True).first()
         if webhook and webhook.url:
-            ok, dest_status = self.post_json(webhook.url, payload, secret=webhook.secret or "")
+            ok, dest_status = self.post_json(webhook.url, payload)
             webhook.last_status = (dest_status or "")[:80]
             webhook.save(update_fields=["last_status", "updated_at"])
             if not ok:

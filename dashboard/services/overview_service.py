@@ -21,7 +21,11 @@ class DashboardService:
             exceptions = docs.filter(status=Document.STATUS_FAILED).count()
             today = timezone.now().date()
             extracted_today = docs.filter(
-                status__in=[Document.STATUS_NEEDS_REVIEW, Document.STATUS_APPROVED],
+                status__in=[
+                    Document.STATUS_NEEDS_REVIEW,
+                    Document.STATUS_EXTRACTED,
+                    Document.STATUS_APPROVED,
+                ],
                 created_at__date=today,
             ).count()
             attention = list(
@@ -32,6 +36,8 @@ class DashboardService:
                 pipeline_step = 3
             elif needs_review:
                 pipeline_step = 4
+            elif docs.filter(status__in=[Document.STATUS_EXTRACTED, Document.STATUS_APPROVED]).exists():
+                pipeline_step = 5
             elif export_count:
                 pipeline_step = 5
             elif docs.exists():

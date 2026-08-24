@@ -6,52 +6,29 @@
 <button class="btn btn-dark" type="button" data-open="modal-export">New export</button>
 {% endblock %}
 {% block app_content %}
-<div data-exports data-list-url="{% url 'export_list_api' %}" data-create-url="{% url 'export_create_api' %}" data-sql-url="{% url 'export_sql_api' %}" data-webhook-url="{% url 'webhook_api' %}" data-webhook-test-url="{% url 'webhook_test_api' %}">
+<div data-exports data-list-url="{% url 'export_list_api' %}" data-create-url="{% url 'export_create_api' %}" data-webhook-url="{% url 'webhook_api' %}" data-webhook-test-url="{% url 'webhook_test_api' %}">
 <div class="export-actions">
   <button class="btn btn-dark" type="button" data-export-quick="json">Download clean JSON</button>
   <button class="btn btn-ghost" type="button" data-export-quick="csv">Download formatted CSV</button>
-  <button class="btn btn-ghost" type="button" data-copy-sql>Copy PostgreSQL insert script</button>
   <button class="btn btn-ghost" type="button" data-webhook-test>Send webhook test</button>
 </div>
 
 <p class="logo-kicker">Destination integration grid</p>
-<ul class="logo-grid">
-  <li>PostgreSQL</li>
-  <li>Supabase</li>
-  <li>Airtable</li>
-  <li>QuickBooks</li>
-  <li>Xero</li>
-  <li>AWS S3</li>
-  <li>Google Sheets</li>
-  <li>n8n Webhooks</li>
+<ul class="logo-grid is-soon">
+  <li>PostgreSQL <span>Coming soon</span></li>
+  <li>Supabase <span>Coming soon</span></li>
+  <li>Airtable <span>Coming soon</span></li>
+  <li>QuickBooks <span>Coming soon</span></li>
+  <li>Xero <span>Coming soon</span></li>
+  <li>AWS S3 <span>Coming soon</span></li>
+  <li>Google Sheets <span>Coming soon</span></li>
+  <li>n8n Webhooks <span>Coming soon</span></li>
 </ul>
 
-<div class="grid-2">
-  <article class="panel">
-    <header><h2>Recent files</h2></header>
-    <ul class="queue" data-export-list></ul>
-    <p class="hint" data-export-empty>No exports yet. Generate JSON or CSV from extracted documents.</p>
-  </article>
-  <article class="panel">
-    <header><h2>Destinations</h2></header>
-    <ul class="queue">
-      <li>
-        <div><strong>CSV / JSON download</strong><span>Built from extracted fields</span></div>
-        <button class="link" type="button" data-export-quick="json">Run</button>
-      </li>
-      <li>
-        <div>
-          <strong>HTTPS webhook</strong>
-          <span data-webhook-status>Save an endpoint to ping it</span>
-        </div>
-        <button class="link" type="button" data-webhook-test>Ping</button>
-      </li>
-      <li>
-        <div><strong>PostgreSQL</strong><span>Copy inserts from extracted JSON</span></div>
-        <button class="link" type="button" data-copy-sql>Copy SQL</button>
-      </li>
-    </ul>
-  </article>
-</div>
+<article class="panel">
+  <header><h2>Recent files</h2></header>
+  <ul class="queue" data-export-list></ul>
+  <p class="hint" data-export-empty>No exports yet. Generate JSON or CSV from extracted documents.</p>
+</article>
 </div>
 {% endblock %}

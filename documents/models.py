@@ -54,12 +54,14 @@ class Document(models.Model):
     STATUS_QUEUED = "queued"
     STATUS_PROCESSING = "processing"
     STATUS_NEEDS_REVIEW = "needs_review"
+    STATUS_EXTRACTED = "extracted"
     STATUS_APPROVED = "approved"
     STATUS_FAILED = "failed"
     STATUS_CHOICES = [
         (STATUS_QUEUED, "Queued"),
         (STATUS_PROCESSING, "Processing"),
         (STATUS_NEEDS_REVIEW, "Needs review"),
+        (STATUS_EXTRACTED, "Extracted"),
         (STATUS_APPROVED, "Approved"),
         (STATUS_FAILED, "Failed"),
     ]

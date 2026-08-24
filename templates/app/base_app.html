@@ -16,7 +16,7 @@
       <a href="{% url 'exports' %}" class="{% if request.resolver_match.url_name == 'exports' %}is-on{% endif %}">Exports</a>
     </nav>
     <button class="side-help" type="button" data-open="modal-help">Need help?</button>
-    <a class="btn btn-hire btn-full" href="{{ FIVERR_GIG_URL }}" target="_blank" rel="noopener">Hire on Fiverr</a>
+    {% comment %} <a class="btn btn-hire btn-full" href="{{ FIVERR_GIG_URL }}" target="_blank" rel="noopener">Hire on Fiverr</a> {% endcomment %}
   </aside>
 
   <div class="main">
@@ -53,14 +53,14 @@
     </header>
     <div class="modal-body">
       <div class="dropzone" data-dropzone>
-        <p><strong>Drop PDFs</strong><br>or click to browse. Schema is optional — Groq will auto-extract if you skip it.</p>
+        <p><strong>Drop PDFs</strong><br>or click to browse. Schema is optional.</p>
         <input type="file" accept="application/pdf,.pdf" multiple hidden data-file-input />
       </div>
       <p class="hint" data-upload-files hidden></p>
       <label class="field">
         <span>Schema (optional)</span>
         <select data-upload-schema>
-          <option value="">No schema — auto extract</option>
+          <option value="">No schema</option>
         </select>
       </label>
     </div>
@@ -136,7 +136,6 @@
         <select data-approve-dest>
           <option value="json">JSON download</option>
           <option value="csv">CSV / Excel</option>
-          <option value="sql">PostgreSQL</option>
           <option value="webhook">Webhook</option>
         </select>
       </label>
@@ -221,6 +220,7 @@
           <option value="queued">Queued</option>
           <option value="processing">Processing</option>
           <option value="needs_review">Needs review</option>
+          <option value="extracted">Extracted</option>
           <option value="approved">Approved</option>
           <option value="failed">Failed</option>
         </select>
@@ -346,10 +346,6 @@
       <label class="field">
         <span>URL</span>
         <input data-webhook-url-input placeholder="https://your-api.com/fieldline" />
-      </label>
-      <label class="field">
-        <span>Secret</span>
-        <input data-webhook-secret-input placeholder="whsec_…" />
       </label>
     </div>
     <footer>
