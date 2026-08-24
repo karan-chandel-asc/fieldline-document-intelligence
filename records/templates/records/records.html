@@ -11,7 +11,7 @@
   data-list-url="{% url 'records_list_api' %}"
   data-review-url="{% url 'review' %}"
 >
-  <p class="lead">When extraction finishes, Celery POSTs a webhook into this table. Columns appear from whatever fields Groq returned.</p>
+  <p class="lead">When a schema is complete, Celery POSTs extracted JSON into this table. Columns come from the Groq payload — review boxes stay on the Review page.</p>
   <div class="inbox-toolbar">
     <input class="search" type="search" placeholder="Search filename, schema, or a field value" data-records-search />
   </div>

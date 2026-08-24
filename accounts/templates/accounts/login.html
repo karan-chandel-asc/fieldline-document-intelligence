@@ -9,7 +9,7 @@
     <div data-auth-panel="signin">
       <p class="eyebrow">Workspace</p>
       <h1>Sign in</h1>
-      <p class="auth-lead">{% if next and next != "/app/" %}Sign in to continue to the page you opened.{% else %}Use your work email to open the document inbox.{% endif %}</p>
+      <p class="auth-lead">{% if next and next != "/app/" %}Sign in to continue to the page you opened.{% else %}Use your work email to upload PDFs and review extracted fields.{% endif %}</p>
       <form class="stack" id="login-form" novalidate>
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}" />

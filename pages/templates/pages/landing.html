@@ -17,18 +17,18 @@
 </header>
 
 <ul class="metric-strip">
-  <li><strong>1.8s</strong> avg. extraction time</li>
-  <li><strong>Fast setup</strong> Start extracting in minutes</li>
-  <li><strong>99.4%</strong> parsing accuracy with Pydantic checks</li>
+  <li><strong>Layout + Groq</strong> Page boxes on real PDFs</li>
+  <li><strong>Human review</strong> Edit before anything is exported</li>
+  <li><strong>JSON / CSV</strong> Clean rows out of messy files</li>
 </ul>
 
 <section class="hero">
   <div class="hero-copy">
     <p class="eyebrow">Document intelligence</p>
     <h1>Messy PDFs become<br>fields you can trust.</h1>
-    <p class="lede">Invoices, receipts, and freight bills — extracted, validated with Pydantic, then reviewed before anything hits PostgreSQL.</p>
+    <p class="lede">Invoices, receipts, and freight bills — extracted with layout + Groq, then reviewed before anything hits the warehouse.</p>
     <div class="hero-actions">
-      <a class="btn btn-dark" href="{% url 'review' %}?doc=invoice">Open live review</a>
+      <a class="btn btn-dark" href="{% url 'review' %}?doc=invoice">Open sample review</a>
       <a class="btn btn-ghost" href="{% url 'inbox' %}">View inbox</a>
     </div>
   </div>
@@ -48,23 +48,23 @@
   <div>
     <p class="eyebrow">1-click interactive demo</p>
     <h2>Three documents. No file upload.</h2>
-    <p>Click a card. Watch OCR → Vision LLM → Pydantic → review, with bounding boxes and JSON.</p>
+    <p>Sample cards are canned walkthroughs. Upload a text-layer PDF in Inbox to see real page boxes from PyMuPDF.</p>
   </div>
   <div class="sample-grid">
     <a class="sample-card" href="{% url 'review' %}?doc=invoice">
-      <span class="pill pill-ok">Tables &amp; skew</span>
-      <h3>Messy scanned invoice</h3>
-      <p>Line-item tables, smudged PO stamp, math check on $4,280.00.</p>
+      <span class="pill pill-ok">Sample UI</span>
+      <h3>Invoice walkthrough</h3>
+      <p>Hardcoded boxes on a demo invoice — not live spatial extraction.</p>
     </a>
     <a class="sample-card" href="{% url 'review' %}?doc=receipt">
-      <span class="pill pill-warn">Low contrast</span>
-      <h3>Faded physical receipt</h3>
-      <p>Handwritten merchant, washed-out ink, a date the model flagged as future.</p>
+      <span class="pill pill-warn">Sample UI</span>
+      <h3>Receipt walkthrough</h3>
+      <p>Canned fields and boxes so you can click around without uploading.</p>
     </a>
     <a class="sample-card" href="{% url 'review' %}?doc=bol">
-      <span class="pill pill-muted">3 pages</span>
-      <h3>Logistics freight bill</h3>
-      <p>Rotated multi-page BOL — shipper, consignee, PRO, weight.</p>
+      <span class="pill pill-muted">Sample UI</span>
+      <h3>Freight bill walkthrough</h3>
+      <p>Multi-page sample layout. Live multi-page PDFs use Previous / Next on Review.</p>
     </a>
   </div>
 </section>
@@ -72,10 +72,10 @@
 <section class="strip" id="how">
   <div>
     <h2>How teams use it</h2>
-    <p>Drop a file in. Fieldline reads it. You approve exceptions. Clean JSON, CSV, or a database row leaves the building.</p>
+    <p>Upload a PDF. Fieldline renders the page, Groq fills fields, you approve exceptions, then JSON / CSV leaves the building.</p>
   </div>
   <ol class="steps">
-    <li><a href="{% url 'inbox' %}"><strong>Ingest</strong> Upload, email, or a watched folder.</a></li>
+    <li><a href="{% url 'inbox' %}"><strong>Ingest</strong> Upload PDFs from Inbox.</a></li>
     <li><a href="{% url 'review' %}?doc=invoice"><strong>Extract</strong> Fields, line items, dates, totals.</a></li>
     <li><a href="{% url 'review' %}?doc=invoice"><strong>Review</strong> Humans fix only what looks uncertain.</a></li>
     <li><a href="{% url 'exports' %}"><strong>Export</strong> JSON, CSV, SQL, webhook.</a></li>
@@ -90,7 +90,7 @@
     <a class="btn btn-dark" href="{% url 'review' %}?doc=invoice">Talk through a demo</a>
   </div>
   <ul class="feature-list">
-    <li><a href="{% url 'review' %}?doc=invoice">Bounding boxes on hover and click</a></li>
+    <li><a href="{% url 'review' %}?doc=invoice">Bounding boxes on live page images and sample demos</a></li>
     <li><a href="{% url 'review' %}?doc=invoice">Form and JSON payload</a></li>
     <li><a href="{% url 'schemas' %}">Custom extraction schemas</a></li>
     <li><a href="{% url 'inbox' %}">Batch workers with live throughput</a></li>
@@ -101,17 +101,17 @@
   <p class="eyebrow">Architecture</p>
   <h2>What you are buying under the UI</h2>
   <ol class="arch">
-    <li><strong>Ingest</strong>PDF, Drive, S3</li>
-    <li><strong>FastAPI</strong>Job API</li>
+    <li><strong>Ingest</strong>PDF upload</li>
+    <li><strong>Django</strong>Workspace + APIs</li>
     <li><strong>Celery</strong>Worker queue</li>
-    <li><strong>Vision LLM</strong>GPT-4o / Claude</li>
-    <li><strong>Pydantic</strong>Schema + math</li>
-    <li><strong>PostgreSQL</strong>Clean rows</li>
+    <li><strong>PyMuPDF</strong>Page image + word boxes</li>
+    <li><strong>Groq</strong>Structured JSON</li>
+    <li><strong>Review</strong>Align, edit, export</li>
   </ol>
 </section>
 
 <section class="strip logos-block">
-  <p class="logo-kicker">Destination integration grid</p>
+  <p class="logo-kicker">Destination integration grid — coming soon except JSON / CSV / webhook</p>
   <ul class="logo-grid">
     <li>PostgreSQL</li>
     <li>Supabase</li>

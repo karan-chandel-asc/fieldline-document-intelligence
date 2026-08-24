@@ -752,12 +752,30 @@ a.pill, button.pill {
   background: #ece7dc;
   overflow: hidden;
 }
-.pdf-frame {
-  width: 100%;
-  min-height: 64vh;
-  border: 0;
-  background: #fff;
+.scan-page.is-live-page {
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.scan-page.is-live-page [data-page-image] {
   display: block;
+  width: 100%;
+  height: auto;
+}
+.scan-page.is-live-page [data-live-boxes] {
+  position: absolute;
+  inset: 0;
+}
+.scan-page.is-live-page [data-live-boxes] .bbox {
+  pointer-events: auto;
+}
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
 }
 .modal .pdf-frame { min-height: 52vh; }
 .scan-stage.is-skew-wrap { background: #c9bfae; overflow: hidden; padding: 1.6rem 1rem; }

@@ -13,7 +13,7 @@
 {% if empty %}
 <article class="panel">
   <h2>Pick a document to review</h2>
-  <p class="lead">Inbox items with extracted fields open here. Sample demos from the marketing page still work with <code>?doc=invoice</code>.</p>
+  <p class="lead">Inbox items with extracted fields open here. Live jobs show a page image with aligned boxes. Sample demos still work with <code>?doc=invoice</code>.</p>
   <div class="btn-row">
     <a class="btn btn-dark" href="{% url 'inbox' %}?status=needs_review">Open inbox</a>
     <a class="btn btn-ghost" href="{% url 'review' %}?doc=invoice">Try sample invoice</a>
@@ -34,12 +34,12 @@
 
   <div class="ingest-overlay" data-ingest {% if live %}hidden{% endif %}>
     <p class="ingest-kicker">Pipeline</p>
-    <p class="ingest-step" data-ingest-step>OCR Scanning…</p>
+    <p class="ingest-step" data-ingest-step>Reading PDF layout…</p>
     <div class="ingest-bar"><span data-ingest-fill></span></div>
     <ol class="ingest-stages">
-      <li data-ingest-stage="0">OCR Scanning</li>
-      <li data-ingest-stage="1">Vision LLM Extraction</li>
-      <li data-ingest-stage="2">Pydantic Schema Validation</li>
+      <li data-ingest-stage="0">Read PDF layout</li>
+      <li data-ingest-stage="1">Groq JSON extraction</li>
+      <li data-ingest-stage="2">Align fields to page boxes</li>
       <li data-ingest-stage="3">Ready for Review</li>
     </ol>
   </div>
@@ -49,7 +49,19 @@
       <span data-review-pages>{{ doc.pages }}</span>
       <a class="link" href="{% url 'schemas' %}" data-review-schema>{{ doc.schema_name }} schema</a>
     </div>
-    <div class="scan-stage is-pdf" data-pdf-wrap {% if not live %}hidden{% endif %}>
+    <div class="scan-stage is-page" data-live-scan {% if not live %}hidden{% endif %}>
+      <div class="page-nav" data-page-nav>
+        <button type="button" class="link" data-page-prev>Previous</button>
+        <span data-page-label>Page 1 of 1</span>
+        <button type="button" class="link" data-page-next>Next</button>
+      </div>
+      <div class="scan-page is-live-page" data-live-page>
+        <img data-page-image alt="Rendered PDF page" />
+        <div data-live-boxes></div>
+      </div>
+      <p class="hint" data-layout-note hidden></p>
+    </div>
+    <div class="scan-stage is-pdf" data-pdf-wrap hidden>
       <iframe class="pdf-frame" data-pdf-frame title="Source PDF"></iframe>
       <p class="hint" data-pdf-missing hidden>Original PDF is not available for this document.</p>
     </div>
@@ -114,7 +126,7 @@
     </div>
 
     <div data-view-panel="form">
-      <p class="hint" data-review-hint>Hover or click a field — the matching region glows on the scan.</p>
+      <p class="hint" data-review-hint>Hover or click a field — the matching region glows on the page.</p>
       <p class="hint" data-review-error hidden></p>
 
       <div class="verify-banner" data-validations>
@@ -165,7 +177,7 @@
     </div>
 
     <div class="json-pane" data-view-panel="json" hidden>
-      <p class="hint">Validated JSON after Pydantic — ready to POST to your API.</p>
+      <p class="hint">JSON from Groq after layout matching — ready to download.</p>
       <p class="code-label">JSON payload</p>
       <pre class="code-block" data-json-view>{{ payload }}</pre>
       <div class="btn-row">

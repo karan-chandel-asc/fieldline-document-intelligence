@@ -6,7 +6,7 @@
 <button class="btn btn-dark" type="button" data-save-schema>Save schema</button>
 {% endblock %}
 {% block app_content %}
-<p class="lead">Define extraction on the fly. Same pipeline can map invoices, receipts, medical records, or deeds — the worker just reads this schema.</p>
+<p class="lead">Define extraction on the fly. Same pipeline can map invoices, receipts, or freight bills — Groq fills these keys, then layout matching draws boxes.</p>
 
 <div class="schema-layout" data-schema-page data-save-url="{% url 'schema_save_api' %}" data-list-url="{% url 'schema_list_api' %}" data-delete-url="{% url 'schema_delete_api' 0 %}">
   <div>
@@ -97,7 +97,7 @@
         </tbody>
       </table>
     </div>
-    <p class="hint">This table is the contract your Vision LLM + Pydantic layer will validate against.</p>
+    <p class="hint">This table is the contract Groq must fill. Layout matching then draws boxes on the page image.</p>
   </article>
 </div>
 {% endblock %}

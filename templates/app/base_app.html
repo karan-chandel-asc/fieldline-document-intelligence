@@ -53,7 +53,7 @@
     </header>
     <div class="modal-body">
       <div class="dropzone" data-dropzone>
-        <p><strong>Drop PDFs</strong><br>or click to browse. Schema is optional.</p>
+        <p><strong>Drop PDFs</strong><br>or click to browse. Schema is optional. Text-layer PDFs get page boxes.</p>
         <input type="file" accept="application/pdf,.pdf" multiple hidden data-file-input />
       </div>
       <p class="hint" data-upload-files hidden></p>
@@ -360,7 +360,7 @@
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
-      <p>Re-run extraction for this document with the same schema?</p>
+      <p>Re-run layout matching and Groq for this document with the same schema?</p>
     </div>
     <footer>
       <button class="btn btn-ghost" type="button" data-close-modal>Cancel</button>
@@ -374,7 +374,7 @@
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
-      <p>Click a field on the review screen to highlight it on the scan. Upload PDFs from Inbox to extract with your schema.</p>
+      <p>Upload a PDF from Inbox. Celery renders the page, Groq fills fields, then Review highlights matched values on the page image.</p>
       <a class="link" href="{% url 'inbox' %}">Open inbox</a>
     </div>
     <footer>
