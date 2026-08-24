@@ -1,19 +1,40 @@
 {% extends "app/base_app.html" %}
-{% block crumb %}Human review · {{ doc.schema_name }}{% endblock %}
-{% block heading %}{{ doc.filename }}{% endblock %}
+{% block crumb %}<span data-review-crumb>{% if empty %}Human review{% elif live %}Human review{% else %}Human review · {{ doc.schema_name }}{% endif %}</span>{% endblock %}
+{% block heading %}<span data-review-heading>{% if empty %}Review{% else %}{{ doc.filename }}{% endif %}</span>{% endblock %}
 {% block top_actions %}
+{% if not empty %}
 <button class="btn btn-ghost" type="button" data-download="json">Download JSON</button>
 <button class="btn btn-ghost" type="button" data-download="csv">Download CSV</button>
 <button class="btn btn-ghost" type="button" data-copy-sql>Copy SQL</button>
 <button class="btn btn-ghost" type="button" data-open="modal-reject">Reject</button>
 <button class="btn btn-dark" type="button" data-open="modal-approve">Approve &amp; export</button>
+{% endif %}
 {% endblock %}
 {% block app_content %}
-<div class="review" data-review data-filename="{{ doc.filename }}">
+{% if empty %}
+<article class="panel">
+  <h2>Pick a document to review</h2>
+  <p class="lead">Inbox items with extracted fields open here. Sample demos from the marketing page still work with <code>?doc=invoice</code>.</p>
+  <div class="btn-row">
+    <a class="btn btn-dark" href="{% url 'inbox' %}?status=needs_review">Open inbox</a>
+    <a class="btn btn-ghost" href="{% url 'review' %}?doc=invoice">Try sample invoice</a>
+  </div>
+</article>
+{% else %}
+<div
+  class="review"
+  data-review
+  data-filename="{{ doc.filename }}"
+  data-document-id="{{ document_id }}"
+  data-detail-url="{% url 'document_detail_api' 0 %}"
+  data-retry-url="{% url 'document_retry_api' 0 %}"
+  data-inbox-url="{% url 'inbox' %}"
+  data-exceptions-url="{% url 'exceptions' %}"
+>
   <script type="application/json" id="review-payload">{{ payload|safe }}</script>
   <script type="text/plain" id="sql-payload">{{ sql }}</script>
 
-  <div class="ingest-overlay" data-ingest>
+  <div class="ingest-overlay" data-ingest {% if live %}hidden{% endif %}>
     <p class="ingest-kicker">Pipeline</p>
     <p class="ingest-step" data-ingest-step>OCR Scanning…</p>
     <div class="ingest-bar"><span data-ingest-fill></span></div>
@@ -27,10 +48,14 @@
 
   <section class="doc-pane">
     <div class="doc-toolbar">
-      <span>{{ doc.pages }}</span>
-      <a class="link" href="{% url 'schemas' %}">{{ doc.schema_name }} schema</a>
+      <span data-review-pages>{{ doc.pages }}</span>
+      <a class="link" href="{% url 'schemas' %}" data-review-schema>{{ doc.schema_name }} schema</a>
     </div>
-    <div class="scan-stage{% if doc.kind == 'bol' %} is-skew-wrap{% endif %}">
+    <div class="scan-stage is-pdf" data-pdf-wrap {% if not live %}hidden{% endif %}>
+      <iframe class="pdf-frame" data-pdf-frame title="Source PDF"></iframe>
+      <p class="hint" data-pdf-missing hidden>Original PDF is not available for this document.</p>
+    </div>
+    <div class="scan-stage{% if doc.kind == 'bol' %} is-skew-wrap{% endif %}" data-sample-scan {% if live %}hidden{% endif %}>
       <div class="scan-page scan-{{ doc.kind }}{% if doc.kind == 'invoice' %} is-messy{% elif doc.kind == 'receipt' %} is-faded{% endif %}" data-scan>
         {% if doc.kind == "invoice" %}
         <header>
@@ -92,9 +117,10 @@
     </div>
 
     <div data-view-panel="form">
-      <p class="hint">Hover or click a field — the matching region glows on the scan.</p>
+      <p class="hint" data-review-hint>Hover or click a field — the matching region glows on the scan.</p>
+      <p class="hint" data-review-error hidden></p>
 
-      <div class="verify-banner">
+      <div class="verify-banner" data-validations>
         {% for rule in doc.validations %}
         <span class="{% if rule.ok %}is-ok{% else %}is-bad{% endif %}">{% if rule.ok %}✔{% else %}!{% endif %} {{ rule.title }}</span>
         {% endfor %}
@@ -124,12 +150,11 @@
         {% endfor %}
       </form>
 
-      {% if doc.line_items %}
-      <div class="line-items">
+      <div class="line-items" data-line-items {% if not doc.line_items %}hidden{% endif %}>
         <p class="pane-label">Line items</p>
         <table class="table compact">
           <thead><tr><th>Description</th><th>Qty</th><th>Amount</th></tr></thead>
-          <tbody>
+          <tbody data-line-body>
             {% for row in doc.line_items %}
             <tr>
               <td><input value="{{ row.0 }}" /></td>
@@ -140,13 +165,12 @@
           </tbody>
         </table>
       </div>
-      {% endif %}
     </div>
 
     <div class="json-pane" data-view-panel="json" hidden>
       <p class="hint">Validated JSON after Pydantic — ready to POST to your API.</p>
       <p class="code-label">JSON payload</p>
-      <pre class="code-block">{{ payload }}</pre>
+      <pre class="code-block" data-json-view>{{ payload }}</pre>
       <div class="btn-row">
         <button class="btn btn-dark" type="button" data-download="json">Download clean JSON</button>
         <button class="btn btn-ghost" type="button" data-download="csv">Download formatted CSV</button>
@@ -156,9 +180,9 @@
     <div class="json-pane" data-view-panel="sql" hidden>
       <p class="hint">PostgreSQL insert generated from the same schema. Copy into psql or your migration tool.</p>
       <p class="code-label">SQL insert row</p>
-      <pre class="code-block" id="sql-view">{{ sql }}</pre>
+      <pre class="code-block" id="sql-view" data-sql-view>{{ sql }}</pre>
       <p class="code-label">DDL</p>
-      <pre class="code-block">{{ doc.postgres }}</pre>
+      <pre class="code-block" data-ddl-view>{{ doc.postgres }}</pre>
       <div class="btn-row">
         <button class="btn btn-dark" type="button" data-copy-sql>Copy PostgreSQL insert script</button>
         <button class="btn btn-ghost" type="button" data-webhook-test>Send webhook test</button>
@@ -166,4 +190,5 @@
     </div>
   </section>
 </div>
+{% endif %}
 {% endblock %}

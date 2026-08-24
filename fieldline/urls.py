@@ -11,6 +11,7 @@ urlpatterns = [
     path("app/", include("documents.urls")),
     path("app/schemas/", include("schemas.urls")),
     path("app/exports/", include("exports.urls")),
+    path("app/records/", include("records.urls")),
 ]
 
 if settings.DEBUG:

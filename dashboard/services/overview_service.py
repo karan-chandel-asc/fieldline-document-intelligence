@@ -21,7 +21,7 @@ class DashboardService:
             exceptions = docs.filter(status=Document.STATUS_FAILED).count()
             today = timezone.now().date()
             extracted_today = docs.filter(
-                status=Document.STATUS_NEEDS_REVIEW,
+                status__in=[Document.STATUS_NEEDS_REVIEW, Document.STATUS_APPROVED],
                 created_at__date=today,
             ).count()
             attention = list(

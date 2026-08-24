@@ -15,9 +15,11 @@ class DocumentUploadService:
             if not files:
                 return False, "Select at least one PDF", None
 
-            schema = Schema.objects.filter(pk=schema_id).first()
-            if not schema:
-                return False, "Schema not found", None
+            schema = None
+            if schema_id:
+                schema = Schema.objects.filter(pk=schema_id).first()
+                if not schema:
+                    return False, "Schema not found", None
 
             created_by = user if getattr(user, "is_authenticated", False) else None
             pdfs = []
@@ -44,7 +46,7 @@ class DocumentUploadService:
                     )
                     document.file.save(uploaded.name, uploaded, save=True)
 
-            return True, "Extraction queued", job
+            return True, "Extraction queued" if schema else "Auto extraction queued", job
         except Exception as e:
             logger.error(f"Error queueing upload: {e}")
             return False, f"Error queueing upload: {e}", None
@@ -77,6 +79,7 @@ class DocumentUploadService:
                 "needs_review": [Document.STATUS_NEEDS_REVIEW],
                 "queued": [Document.STATUS_QUEUED, Document.STATUS_PROCESSING],
                 "processing": [Document.STATUS_PROCESSING],
+                "approved": [Document.STATUS_APPROVED],
                 "failed": [Document.STATUS_FAILED],
             }
             if status and status not in {"all", ""}:
@@ -103,3 +106,84 @@ class DocumentUploadService:
         except Exception as e:
             logger.error(f"Error listing documents: {e}")
             return False, f"Error listing documents: {e}", None
+
+    def _owned_documents(self, user=None):
+        queryset = Document.objects.select_related("schema", "job")
+        if getattr(user, "is_authenticated", False):
+            return queryset.filter(created_by=user)
+        return queryset.filter(created_by__isnull=True)
+
+    def get_document(self, document_id, user=None):
+        try:
+            document = self._owned_documents(user).filter(pk=document_id).first()
+            if not document:
+                return False, "Document not found", None
+            return True, "Document fetched", document
+        except Exception as e:
+            logger.error(f"Error fetching document: {e}")
+            return False, f"Error fetching document: {e}", None
+
+    def update_document(self, document_id, data, user=None):
+        try:
+            success, message, document = self.get_document(document_id, user=user)
+            if not success:
+                return False, message, None
+
+            fields = []
+            if data.get("extracted_data") is not None:
+                if not isinstance(data["extracted_data"], dict):
+                    return False, "extracted_data must be an object", None
+                document.extracted_data = data["extracted_data"]
+                fields.append("extracted_data")
+
+            if data.get("schema_id"):
+                schema = Schema.objects.filter(pk=data["schema_id"]).first()
+                if not schema:
+                    return False, "Schema not found", None
+                document.schema = schema
+                fields.append("schema")
+
+            if data.get("status"):
+                document.status = data["status"]
+                fields.append("status")
+                if data["status"] == Document.STATUS_FAILED:
+                    document.error_message = data.get("error_message") or "Rejected"
+                    fields.append("error_message")
+                elif data["status"] in {Document.STATUS_APPROVED, Document.STATUS_NEEDS_REVIEW}:
+                    document.error_message = ""
+                    fields.append("error_message")
+
+            if not fields:
+                return False, "Nothing to update", None
+
+            document.save(update_fields=fields + ["updated_at"])
+            if document.status == Document.STATUS_APPROVED:
+                try:
+                    from records.services.webhook_dispatch import WebhookDispatchService
+
+                    WebhookDispatchService().dispatch_document(
+                        document, "fieldline.document.approved"
+                    )
+                except Exception as hook_error:
+                    logger.error(f"Approved-data webhook failed: {hook_error}")
+            return True, "Document updated", document
+        except Exception as e:
+            logger.error(f"Error updating document: {e}")
+            return False, f"Error updating document: {e}", None
+
+    def retry_document(self, document_id, user=None):
+        try:
+            success, message, document = self.get_document(document_id, user=user)
+            if not success:
+                return False, message, None
+            if document.status == Document.STATUS_PROCESSING:
+                return False, "Document is already processing", None
+            if not document.file:
+                return False, "Original file is missing", None
+            document.status = Document.STATUS_QUEUED
+            document.error_message = ""
+            document.save(update_fields=["status", "error_message", "updated_at"])
+            return True, "Retry queued", document
+        except Exception as e:
+            logger.error(f"Error retrying document: {e}")
+            return False, f"Error retrying document: {e}", None

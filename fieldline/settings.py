@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "documents.apps.DocumentsConfig",
     "schemas.apps.SchemasConfig",
     "exports.apps.ExportsConfig",
+    "records.apps.RecordsConfig",
 ]
 
 MIDDLEWARE = [
@@ -44,6 +45,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 ROOT_URLCONF = "fieldline.urls"
 
@@ -98,10 +101,22 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 GROQ_API_KEY = env("GROQ_API_KEY", "groq_api_key")
-GROQ_MODEL = env("GROQ_MODEL", default="llama-3.3-70b-versatile")
+GROQ_MODEL = env("GROQ_MODEL", default="openai/gpt-oss-120b")
 
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
-CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
+_celery_dir = BASE_DIR / "tmp" / "celery"
+_celery_queue = _celery_dir / "queue"
+for _folder in (_celery_queue, _celery_dir / "processed", _celery_dir / "control"):
+    _folder.mkdir(parents=True, exist_ok=True)
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="filesystem://")
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "data_folder_in": str(_celery_queue),
+    "data_folder_out": str(_celery_queue),
+    "processed_folder": str(_celery_dir / "processed"),
+    "control_folder": str(_celery_dir / "control"),
+}
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="")
+CELERY_TASK_IGNORE_RESULT = True
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -109,4 +124,5 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = env("CELERY_EAGER", default="").lower() in {"1", "true", "yes"}
 
+SITE_URL = env("SITE_URL", default="http://127.0.0.1:8000")
 FIVERR_GIG_URL = "https://www.fiverr.com/"

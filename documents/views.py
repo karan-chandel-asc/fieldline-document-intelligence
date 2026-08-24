@@ -11,13 +11,29 @@ from rest_framework.views import APIView
 
 from documents.pipelines.document_pipeline import DocumentPipeline
 from documents.samples import SAMPLES, build_sql
-from documents.schemas import ListDocumentsQuery, UploadDocumentsSchema
-from documents.serializers import DocumentListSerializer, ExtractionJobSerializer
-from documents.tasks import process_extraction_job
+from documents.schemas import ListDocumentsQuery, UpdateDocumentSchema, UploadDocumentsSchema
+from documents.serializers import (
+    DocumentDetailSerializer,
+    DocumentListSerializer,
+    ExtractionJobSerializer,
+)
+from documents.tasks import process_extraction_job, process_single_document
 from fieldline.logger import logger
 from fieldline.pagination import CustomPagination
 from fieldline.responses import error_response, success_response
 from fieldline.services.helper_services import HelperServices
+
+
+SAMPLE_DOC = {
+    "filename": "Select a document",
+    "schema_name": "Review",
+    "pages": "",
+    "kind": "invoice",
+    "fields": [],
+    "validations": [],
+    "line_items": [],
+    "postgres": "",
+}
 
 
 def inbox(request):
@@ -25,14 +41,50 @@ def inbox(request):
 
 
 def review(request):
-    key = request.GET.get("doc", "invoice")
-    doc = SAMPLES.get(key, SAMPLES["invoice"])
-    payload = json.dumps(doc["payload"], indent=2)
-    sql = build_sql(doc["table"], doc["payload"])
+    document_id = (request.GET.get("id") or "").strip()
+    if document_id.isdigit():
+        return render(
+            request,
+            "documents/review.html",
+            {
+                "live": True,
+                "empty": False,
+                "document_id": document_id,
+                "doc": {**SAMPLE_DOC, "filename": "Loading…"},
+                "payload": "{}",
+                "sql": "",
+            },
+        )
+
+    key = request.GET.get("doc")
+    if key and key in SAMPLES:
+        doc = SAMPLES[key]
+        payload = json.dumps(doc["payload"], indent=2)
+        sql = build_sql(doc["table"], doc["payload"])
+        return render(
+            request,
+            "documents/review.html",
+            {
+                "live": False,
+                "empty": False,
+                "document_id": "",
+                "doc": doc,
+                "payload": payload,
+                "sql": sql,
+            },
+        )
+
     return render(
         request,
         "documents/review.html",
-        {"doc": doc, "payload": payload, "sql": sql},
+        {
+            "live": False,
+            "empty": True,
+            "document_id": "",
+            "doc": SAMPLE_DOC,
+            "payload": "{}",
+            "sql": "",
+        },
     )
 
 
@@ -52,7 +104,7 @@ class DocumentUploadApiView(APIView):
             logger.info("Document upload request received")
             try:
                 payload = UploadDocumentsSchema(
-                    schema_id=request.POST.get("schema_id") or 0
+                    schema_id=request.POST.get("schema_id")
                 )
             except ValidationError as e:
                 message = self.helper_services.schema_error(e)
@@ -124,7 +176,7 @@ class ExtractionJobApiView(APIView):
                 ),
                 status=status.HTTP_200_OK,
             )
-            
+
         except Exception as e:
             logger.error(f"Error fetching extraction job: {e}")
             return Response(
@@ -176,6 +228,109 @@ class DocumentListApiView(GenericAPIView):
             return self.get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Error listing documents: {e}")
+            return Response(
+                error_response(message=str(e)),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class DocumentDetailApiView(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = []
+    document_pipeline = DocumentPipeline()
+    helper_services = HelperServices()
+
+    def get(self, request, document_id):
+        try:
+            success, message, document = self.document_pipeline.process_get(
+                document_id, user=request.user
+            )
+            if not success:
+                return Response(
+                    error_response(message=message),
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            return Response(
+                success_response(
+                    message=message,
+                    data=DocumentDetailSerializer(document, context={"request": request}).data,
+                ),
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            logger.error(f"Error fetching document: {e}")
+            return Response(
+                error_response(message=str(e)),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def patch(self, request, document_id):
+        try:
+            logger.info("Document update request received")
+            try:
+                payload = UpdateDocumentSchema(**self.helper_services.request_data(request))
+            except ValidationError as e:
+                message = self.helper_services.schema_error(e)
+                return Response(
+                    error_response(message=message),
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            success, message, document = self.document_pipeline.process_update(
+                document_id,
+                payload.model_dump(),
+                user=request.user,
+            )
+            if not success:
+                code = status.HTTP_404_NOT_FOUND if message == "Document not found" else status.HTTP_400_BAD_REQUEST
+                return Response(error_response(message=message), status=code)
+            return Response(
+                success_response(
+                    message=message,
+                    data=DocumentDetailSerializer(document, context={"request": request}).data,
+                ),
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            logger.error(f"Error updating document: {e}")
+            return Response(
+                error_response(message=str(e)),
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class DocumentRetryApiView(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = []
+    document_pipeline = DocumentPipeline()
+
+    def post(self, request, document_id):
+        try:
+            logger.info("Document retry request received")
+            success, message, document = self.document_pipeline.process_retry(
+                document_id, user=request.user
+            )
+            if not success:
+                code = status.HTTP_404_NOT_FOUND if message == "Document not found" else status.HTTP_400_BAD_REQUEST
+                return Response(error_response(message=message), status=code)
+            try:
+                process_single_document.delay(document.id)
+            except Exception as e:
+                logger.error(f"Could not queue document retry: {e}")
+                return Response(
+                    error_response(
+                        message="Could not start the background worker. Start Redis and Celery, then try again."
+                    ),
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+            return Response(
+                success_response(
+                    message=message,
+                    data=DocumentDetailSerializer(document, context={"request": request}).data,
+                ),
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            logger.error(f"Error retrying document: {e}")
             return Response(
                 error_response(message=str(e)),
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

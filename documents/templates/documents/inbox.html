@@ -10,7 +10,7 @@
   <header>
     <div>
       <h2>Batch worker</h2>
-      <p class="hint" style="margin:0.2rem 0 0">Celery worker extracts PDFs with Groq against your saved schema</p>
+      <p class="hint" style="margin:0.2rem 0 0">Celery extracts PDFs with Groq — pick a schema or leave it blank to auto extract</p>
     </div>
     <button class="btn btn-dark" type="button" data-open="modal-upload">Upload PDFs</button>
   </header>
@@ -28,6 +28,7 @@
     <button class="is-on" type="button" data-filter="all">All</button>
     <button type="button" data-filter="needs_review">Needs review</button>
     <button type="button" data-filter="queued">Queued</button>
+    <button type="button" data-filter="approved">Approved</button>
     <button type="button" data-filter="failed">Failed</button>
   </div>
   <input class="search" type="search" placeholder="Search filename, schema, or vendor" data-inbox-search />

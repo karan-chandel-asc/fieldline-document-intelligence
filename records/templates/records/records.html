@@ -1,0 +1,28 @@
+{% extends "app/base_app.html" %}
+{% block crumb %}Warehouse{% endblock %}
+{% block heading %}Extracted data{% endblock %}
+{% block top_actions %}
+<button class="btn btn-ghost" type="button" data-open="modal-webhook">Webhook destination</button>
+<a class="btn btn-dark" href="{% url 'inbox' %}">Upload more</a>
+{% endblock %}
+{% block app_content %}
+<div
+  data-records
+  data-list-url="{% url 'records_list_api' %}"
+  data-review-url="{% url 'review' %}"
+>
+  <p class="lead">When extraction finishes, Celery POSTs a webhook into this table. Columns appear from whatever fields Groq returned.</p>
+  <div class="inbox-toolbar">
+    <input class="search" type="search" placeholder="Search filename, schema, or a field value" data-records-search />
+  </div>
+  <div class="table-wrap">
+    <table class="table data-table">
+      <thead data-records-head></thead>
+      <tbody data-records-body></tbody>
+    </table>
+    <p class="hint" data-records-empty hidden>No extracted rows yet. Upload a PDF and keep Celery running.</p>
+    <p class="hint" data-records-loading hidden>Loading extracted rows…</p>
+    <button class="btn btn-ghost btn-full" type="button" data-records-more hidden>Load more</button>
+  </div>
+</div>
+{% endblock %}

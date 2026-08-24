@@ -23,7 +23,7 @@ class ExportService:
     def _exportable_docs(self, user, source_range):
         queryset = self._owned(
             Document.objects.select_related("schema").filter(
-                status=Document.STATUS_NEEDS_REVIEW
+                status__in=[Document.STATUS_NEEDS_REVIEW, Document.STATUS_APPROVED]
             ),
             user,
         ).order_by("-created_at")

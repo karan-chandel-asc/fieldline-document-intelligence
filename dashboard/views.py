@@ -33,7 +33,7 @@ class DashboardOverviewApiView(APIView):
             return Response(
                 success_response(
                     message=message,
-                    data=DashboardOverviewSerializer(payload).data,
+                    data=DashboardOverviewSerializer(payload, context={"request": request}).data,
                 ),
                 status=status.HTTP_200_OK,
             )

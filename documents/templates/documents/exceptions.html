@@ -5,41 +5,31 @@
 <button class="btn btn-ghost" type="button" data-open="modal-filters">Filters</button>
 {% endblock %}
 {% block app_content %}
-<p class="lead">Rejected or failed jobs land here. Retry, reassign schema, or send a note.</p>
-<div class="table-wrap">
-<table class="table">
+<p class="lead">Rejected or failed jobs land here. Retry, change schema, or open the original PDF.</p>
+<div class="inbox-toolbar">
+  <input class="search" type="search" placeholder="Search failed documents" data-inbox-search />
+</div>
+<div
+  class="table-wrap"
+  data-inbox
+  data-inbox-mode="exceptions"
+  data-fixed-status="failed"
+  data-list-url="{% url 'documents_list_api' %}"
+  data-review-url="{% url 'review' %}"
+>
+<table class="table" data-inbox-table>
   <thead>
-    <tr><th>Document</th><th>Issue</th><th>When</th><th></th></tr>
+    <tr>
+      <th>Document</th>
+      <th>Issue</th>
+      <th>When</th>
+      <th></th>
+    </tr>
   </thead>
-  <tbody>
-    <tr>
-      <td><strong>scan-blur-09.pdf</strong><span>Unreadable scan</span></td>
-      <td>OCR confidence too low</td>
-      <td>18 Aug · 10:02</td>
-      <td>
-        <button class="link" type="button" data-open="modal-retry">Retry</button>
-        · <button class="link" type="button" data-open="modal-preview">Preview</button>
-      </td>
-    </tr>
-    <tr>
-      <td><strong>BOL-2100.pdf</strong><span>Wrong schema</span></td>
-      <td>Parsed as invoice</td>
-      <td>18 Aug · 07:41</td>
-      <td>
-        <button class="link" type="button" data-open="modal-schema-edit">Change schema</button>
-        · <button class="link" type="button" data-open="modal-retry">Retry</button>
-      </td>
-    </tr>
-    <tr>
-      <td><strong>INV-9901.pdf</strong><span>Duplicate</span></td>
-      <td>Same invoice_no as INV-10482</td>
-      <td>17 Aug · 19:12</td>
-      <td>
-        <button class="link" type="button" data-open="modal-reject">Keep rejected</button>
-        · <a class="link" href="{% url 'review' %}?doc=invoice">Compare</a>
-      </td>
-    </tr>
-  </tbody>
+  <tbody data-inbox-body></tbody>
 </table>
+<p class="hint" data-inbox-empty hidden>No failed documents.</p>
+<p class="hint" data-inbox-loading hidden>Loading exceptions…</p>
+<button class="btn btn-ghost btn-full" type="button" data-inbox-more hidden>Load more</button>
 </div>
 {% endblock %}

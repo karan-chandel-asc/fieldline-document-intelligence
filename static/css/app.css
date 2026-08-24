@@ -696,6 +696,13 @@ a.pill, button.pill {
 .top-right { flex-wrap: nowrap; }
 .inbox-table-wrap, .table-wrap { overflow-x: auto; }
 .table-wrap .table { min-width: 560px; }
+.table-wrap .data-table { min-width: 720px; }
+.data-table th, .data-table td {
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 :focus-visible {
   outline: 2px solid var(--copper);
@@ -735,6 +742,19 @@ a.pill, button.pill {
   padding: 0.9rem;
   min-height: 58vh;
 }
+.scan-stage.is-pdf {
+  padding: 0;
+  background: #ece7dc;
+  overflow: hidden;
+}
+.pdf-frame {
+  width: 100%;
+  min-height: 64vh;
+  border: 0;
+  background: #fff;
+  display: block;
+}
+.modal .pdf-frame { min-height: 52vh; }
 .scan-stage.is-skew-wrap { background: #c9bfae; overflow: hidden; padding: 1.6rem 1rem; }
 .scan-page {
   position: relative;
@@ -1103,6 +1123,7 @@ a.pill, button.pill {
   border: 1px solid var(--line);
 }
 .ingest-stages li.is-on { background: var(--pine); color: #fff; border-color: var(--pine); }
+.hint[data-review-error] { color: var(--warn); padding: 0 1rem; }
 .verify-banner {
   display: flex;
   flex-wrap: wrap;
