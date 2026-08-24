@@ -45,24 +45,21 @@
 <div class="modal-root" data-modal-root hidden>
   <div class="modal-backdrop" data-close-modal></div>
 
-  <div class="modal" id="modal-upload" hidden>
+  <div class="modal" id="modal-upload" hidden data-upload-url="{% url 'documents_upload_api' %}" data-job-url="{% url 'extraction_job_api' 0 %}" data-schema-list-url="{% url 'schema_list_api' %}" data-inbox-url="{% url 'inbox' %}">
     <header>
       <h2>Upload documents</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
     </header>
     <div class="modal-body">
       <div class="dropzone" data-dropzone>
-        <p><strong>Drop PDFs or images</strong><br>or click to browse</p>
-        <input type="file" accept=".pdf,image/*" multiple hidden data-file-input />
+        <p><strong>Drop PDFs</strong><br>or click to browse. Multiple files are queued in Celery.</p>
+        <input type="file" accept="application/pdf,.pdf" multiple hidden data-file-input />
       </div>
+      <p class="hint" data-upload-files hidden></p>
       <label class="field">
         <span>Schema</span>
-        <select>
-          <option>Auto-detect</option>
-          <option>Invoice</option>
-          <option>Receipt</option>
-          <option>Bill of lading</option>
-          <option>Contract</option>
+        <select data-upload-schema>
+          <option value="">Select a schema</option>
         </select>
       </label>
     </div>
@@ -173,7 +170,7 @@
     </footer>
   </div>
 
-  <div class="modal" id="modal-export" hidden>
+  <div class="modal" id="modal-export" hidden data-create-url="{% url 'export_create_api' %}">
     <header>
       <h2>New export</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
@@ -181,11 +178,18 @@
     <div class="modal-body">
       <label class="field">
         <span>Format</span>
-        <select><option>CSV</option><option>JSON</option><option>Excel</option></select>
+        <select data-export-format>
+          <option value="csv">CSV</option>
+          <option value="json">JSON</option>
+        </select>
       </label>
       <label class="field">
         <span>Range</span>
-        <select><option>Approved today</option><option>This week</option><option>Selected documents</option></select>
+        <select data-export-range>
+          <option value="today">Extracted today</option>
+          <option value="week">This week</option>
+          <option value="all">All extracted</option>
+        </select>
       </label>
     </div>
     <footer>
@@ -201,20 +205,32 @@
     </header>
     <div class="modal-body">
       <label class="field">
-        <span>Type</span>
-        <select><option>Any</option><option>Invoice</option><option>Receipt</option><option>BOL</option><option>Contract</option></select>
+        <span>Schema</span>
+        <select data-filter-schema>
+          <option value="">Any</option>
+        </select>
       </label>
       <label class="field">
         <span>Status</span>
-        <select><option>Any</option><option>Queued</option><option>Needs review</option><option>Approved</option><option>Rejected</option></select>
+        <select data-filter-status>
+          <option value="all">Any</option>
+          <option value="queued">Queued</option>
+          <option value="processing">Processing</option>
+          <option value="needs_review">Needs review</option>
+          <option value="failed">Failed</option>
+        </select>
       </label>
       <label class="field">
         <span>Received</span>
-        <select><option>Any time</option><option>Today</option><option>Last 7 days</option></select>
+        <select data-filter-received>
+          <option value="">Any time</option>
+          <option value="today">Today</option>
+          <option value="7d">Last 7 days</option>
+        </select>
       </label>
     </div>
     <footer>
-      <button class="btn btn-ghost" type="button" data-close-modal>Reset</button>
+      <button class="btn btn-ghost" type="button" data-reset-filters>Reset</button>
       <button class="btn btn-dark" type="button" data-apply-filters>Apply filters</button>
     </footer>
   </div>
@@ -312,7 +328,7 @@
     </footer>
   </div>
 
-  <div class="modal" id="modal-webhook" hidden>
+  <div class="modal" id="modal-webhook" hidden data-webhook-api="{% url 'webhook_api' %}" data-webhook-test-api="{% url 'webhook_test_api' %}">
     <header>
       <h2>Webhook destination</h2>
       <button class="modal-x" type="button" data-close-modal aria-label="Close"></button>
@@ -320,11 +336,11 @@
     <div class="modal-body">
       <label class="field">
         <span>URL</span>
-        <input placeholder="https://your-api.com/fieldline" />
+        <input data-webhook-url-input placeholder="https://your-api.com/fieldline" />
       </label>
       <label class="field">
         <span>Secret</span>
-        <input placeholder="whsec_…" />
+        <input data-webhook-secret-input placeholder="whsec_…" />
       </label>
     </div>
     <footer>

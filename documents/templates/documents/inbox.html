@@ -10,34 +10,34 @@
   <header>
     <div>
       <h2>Batch worker</h2>
-      <p class="hint" style="margin:0.2rem 0 0">Celery / FastAPI background tasks — UI simulation</p>
+      <p class="hint" style="margin:0.2rem 0 0">Celery worker extracts PDFs with Groq against your saved schema</p>
     </div>
-    <button class="btn btn-dark" type="button" data-run-batch>Run 50-file batch</button>
+    <button class="btn btn-dark" type="button" data-open="modal-upload">Upload PDFs</button>
   </header>
-  <p class="batch-status" data-batch-status>Idle. Drop files or run a batch to show throughput.</p>
+  <p class="batch-status" data-batch-status>Idle. Upload PDFs to queue a background extraction job.</p>
   <div class="batch-bar" aria-hidden="true"><span data-batch-bar style="width:0%"></span></div>
   <ul class="batch-meta">
-    <li>Processing <strong data-batch-now>0</strong> of <strong>50</strong></li>
+    <li>Processing <strong data-batch-now>0</strong> of <strong data-batch-total>0</strong></li>
     <li>Speed: <span data-batch-speed>—</span></li>
-    <li><span data-batch-ok>0</span> success · <span data-batch-flag>0</span> flagged for review</li>
+    <li><span data-batch-ok>0</span> success · <span data-batch-flag>0</span> flagged</li>
   </ul>
 </article>
 
 <div class="inbox-toolbar">
   <div class="tabs" role="tablist">
     <button class="is-on" type="button" data-filter="all">All</button>
-    <button type="button" data-filter="review">Needs review</button>
-    <button type="button" data-filter="ready">Approved</button>
+    <button type="button" data-filter="needs_review">Needs review</button>
     <button type="button" data-filter="queued">Queued</button>
+    <button type="button" data-filter="failed">Failed</button>
   </div>
-  <input class="search" type="search" placeholder="Search vendor or filename" data-inbox-search />
+  <input class="search" type="search" placeholder="Search filename, schema, or vendor" data-inbox-search />
 </div>
 
 <button class="dropzone" type="button" data-open="modal-upload">
   <p><strong>Drop PDFs here</strong> — opens the upload dialog, then the batch worker</p>
 </button>
 
-<div class="table-wrap">
+<div class="table-wrap" data-inbox data-list-url="{% url 'documents_list_api' %}" data-review-url="{% url 'review' %}">
 <table class="table" data-inbox-table>
   <thead>
     <tr>
@@ -48,67 +48,10 @@
       <th></th>
     </tr>
   </thead>
-  <tbody>
-    <tr data-status="review" data-name="inv-10482 harbor freight">
-      <td>
-        <a class="row-btn" href="{% url 'review' %}?doc=invoice">
-          <strong>INV-10482.pdf</strong>
-          <span>Harbor Freight Lines</span>
-        </a>
-      </td>
-      <td>Invoice</td>
-      <td>18 Aug · 09:14</td>
-      <td><span class="pill pill-warn">Needs review</span></td>
-      <td>
-        <a class="link" href="{% url 'review' %}?doc=invoice">Review</a>
-        · <button class="link" type="button" data-open="modal-retry">Retry</button>
-      </td>
-    </tr>
-    <tr data-status="review" data-name="bol-2291 northline">
-      <td>
-        <a class="row-btn" href="{% url 'review' %}?doc=bol">
-          <strong>BOL-2291.pdf</strong>
-          <span>Northline Logistics · skewed scan</span>
-        </a>
-      </td>
-      <td>Bill of lading</td>
-      <td>18 Aug · 08:02</td>
-      <td><span class="pill pill-warn">Needs review</span></td>
-      <td>
-        <a class="link" href="{% url 'review' %}?doc=bol">Review</a>
-        · <button class="link" type="button" data-open="modal-reject">Reject</button>
-      </td>
-    </tr>
-    <tr data-status="review" data-name="rcp-8831 meridian">
-      <td>
-        <a class="row-btn" href="{% url 'review' %}?doc=receipt">
-          <strong>RCP-8831.pdf</strong>
-          <span>Meridian Supplies · handwritten</span>
-        </a>
-      </td>
-      <td>Receipt</td>
-      <td>17 Aug · 16:40</td>
-      <td><span class="pill pill-warn">Needs review</span></td>
-      <td>
-        <a class="link" href="{% url 'review' %}?doc=receipt">Review</a>
-        · <button class="link" type="button" data-open="modal-export">Export</button>
-      </td>
-    </tr>
-    <tr data-status="queued" data-name="lease-westside realty">
-      <td>
-        <button class="row-btn" type="button" data-open="modal-preview">
-          <strong>lease-westside.pdf</strong>
-          <span>Westside Realty</span>
-        </button>
-      </td>
-      <td>Contract</td>
-      <td>17 Aug · 11:20</td>
-      <td><span class="pill pill-muted">Queued</span></td>
-      <td>
-        <button class="link" type="button" data-open="modal-retry">Run now</button>
-      </td>
-    </tr>
-  </tbody>
+  <tbody data-inbox-body></tbody>
 </table>
+<p class="hint" data-inbox-empty hidden>No documents match these filters.</p>
+<p class="hint" data-inbox-loading hidden>Loading documents…</p>
+<button class="btn btn-ghost btn-full" type="button" data-inbox-more hidden>Load more</button>
 </div>
 {% endblock %}

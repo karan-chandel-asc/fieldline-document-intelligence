@@ -14,9 +14,13 @@ class HelperServices:
     @staticmethod
     def request_data(request):
         data = getattr(request, "data", None)
-        if data is not None:
-            return data.dict() if hasattr(data, "dict") else dict(data)
-        return HelperServices.form_data(request)
+        if data is None:
+            return HelperServices.form_data(request)
+        if isinstance(data, dict) and not hasattr(data, "getlist"):
+            return dict(data)
+        if hasattr(data, "dict"):
+            return data.dict()
+        return dict(data)
 
     @staticmethod
     def safe_next(request, raw=None):

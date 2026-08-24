@@ -1,8 +1,21 @@
+import os
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from dotenv import load_dotenv
 
-SECRET_KEY = "ui-only-dev-key-replace-in-backend"
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+
+def env(*names, default=""):
+    for name in names:
+        value = os.getenv(name)
+        if value is not None and str(value).strip() != "":
+            return str(value).strip().strip('"').strip("'")
+    return default
+
+
+SECRET_KEY = env("SECRET_KEY", default="ui-only-dev-key-replace-in-backend")
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
@@ -16,10 +29,10 @@ INSTALLED_APPS = [
     "rest_framework",
     "pages",
     "accounts.apps.AccountsConfig",
-    "dashboard",
-    "documents",
-    "schemas",
-    "exports",
+    "dashboard.apps.DashboardConfig",
+    "documents.apps.DocumentsConfig",
+    "schemas.apps.SchemasConfig",
+    "exports.apps.ExportsConfig",
 ]
 
 MIDDLEWARE = [
@@ -70,6 +83,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
+    "DEFAULT_PAGINATION_CLASS": "fieldline.pagination.CustomPagination",
+    "PAGE_SIZE": 8,
 }
 
 LANGUAGE_CODE = "en-us"
@@ -79,6 +94,19 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
-# Paste your document-AI gig URL so Hire buttons go to the order page.
+GROQ_API_KEY = env("GROQ_API_KEY", "groq_api_key")
+GROQ_MODEL = env("GROQ_MODEL", default="llama-3.3-70b-versatile")
+
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_ALWAYS_EAGER = env("CELERY_EAGER", default="").lower() in {"1", "true", "yes"}
+
 FIVERR_GIG_URL = "https://www.fiverr.com/"
