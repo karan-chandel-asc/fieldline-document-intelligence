@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from rest_framework import serializers
 
 from documents.models import Document, ExtractionJob
@@ -65,7 +66,7 @@ class DocumentListSerializer(serializers.ModelSerializer):
         if obj.status == Document.STATUS_QUEUED:
             return "Waiting in queue"
         if obj.status == Document.STATUS_PROCESSING:
-            return "Extracting with Groq"
+            return "Extracting layout + Groq"
         return self.get_schema_name(obj) or "—"
 
     def get_received(self, obj):
@@ -80,6 +81,13 @@ class DocumentListSerializer(serializers.ModelSerializer):
         url = obj.file.url
         return request.build_absolute_uri(url) if request else url
 
+    def _media_url(self, path):
+        if not path:
+            return ""
+        url = f"{settings.MEDIA_URL.rstrip('/')}/{str(path).lstrip('/')}"
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
+
 
 class DocumentDetailSerializer(DocumentListSerializer):
     schema_id = serializers.IntegerField(read_only=True, allow_null=True)
@@ -87,16 +95,28 @@ class DocumentDetailSerializer(DocumentListSerializer):
     payload = serializers.SerializerMethodField()
     sql = serializers.SerializerMethodField()
     postgres = serializers.SerializerMethodField()
+    page_images = serializers.SerializerMethodField()
 
     class Meta(DocumentListSerializer.Meta):
         fields = DocumentListSerializer.Meta.fields + (
             "schema_id",
             "schema_fields",
             "extracted_data",
+            "field_meta",
+            "page_images",
             "payload",
             "sql",
             "postgres",
         )
+
+    def get_page_images(self, obj):
+        pages = obj.page_images if isinstance(obj.page_images, list) else []
+        out = []
+        for page in pages:
+            item = dict(page) if isinstance(page, dict) else {}
+            item["url"] = self._media_url(item.get("path"))
+            out.append(item)
+        return out
 
     def get_schema_fields(self, obj):
         if not obj.schema:

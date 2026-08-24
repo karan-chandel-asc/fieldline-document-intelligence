@@ -106,6 +106,7 @@
   };
 
   const highlight = (key, opts = {}) => {
+    if (typeof showLiveFieldPage === "function") showLiveFieldPage(key);
     $$("[data-field]").forEach((el) => el.classList.toggle("is-on", el.dataset.field === key));
     $$("[data-bbox]").forEach((el) => el.classList.toggle("is-on", el.dataset.bbox === key));
     if (opts.scroll === false) return;
@@ -115,6 +116,18 @@
 
   let lockedField = null;
   const firstLow = $("[data-field].is-low");
+
+  const bindBoxHighlight = (root = document) => {
+    $$("[data-bbox]", root).forEach((el) => {
+      el.addEventListener("mouseenter", () => highlight(el.dataset.bbox, { scroll: false }));
+      el.addEventListener("mouseleave", () => lockedField && highlight(lockedField, { scroll: false }));
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        lockedField = el.dataset.bbox;
+        highlight(lockedField);
+      });
+    });
+  };
 
   const bindHighlight = () => {
     $$("[data-field]").forEach((el) => {
@@ -129,23 +142,60 @@
         highlight(lockedField, { scroll: false });
       });
     });
-    $$("[data-bbox]").forEach((el) => {
-      el.addEventListener("mouseenter", () => highlight(el.dataset.bbox, { scroll: false }));
-      el.addEventListener("mouseleave", () => lockedField && highlight(lockedField, { scroll: false }));
-      el.addEventListener("click", (e) => {
-        e.preventDefault();
-        lockedField = el.dataset.bbox;
-        highlight(lockedField);
-      });
-    });
+    bindBoxHighlight($("[data-sample-scan]") || document);
   };
 
   const ingest = $("[data-ingest]");
   const liveRoot = $("[data-review]");
   const isLiveReview = Boolean(liveRoot && liveRoot.dataset.documentId);
+  let livePages = [];
+  let liveMeta = {};
+  let livePageIndex = 0;
+  let showLiveFieldPage = () => {};
+
+  const drawLiveBoxes = () => {
+    const wrap = $("[data-live-boxes]");
+    if (!wrap) return;
+    const current = livePages[livePageIndex];
+    const pageNo = current ? current.page : 1;
+    wrap.innerHTML = Object.entries(liveMeta)
+      .filter(([, meta]) => meta && meta.matched && meta.page === pageNo && Array.isArray(meta.bbox))
+      .map(([key, meta]) => {
+        const [left, top, width, height] = meta.bbox;
+        const low = (meta.conf || 0) < 0.75;
+        return `<button class="bbox${low ? " is-warn" : ""}" type="button" data-bbox="${escapeHtml(key)}"
+          style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;" aria-label="Highlight ${escapeHtml(key)}"></button>`;
+      })
+      .join("");
+    bindBoxHighlight(wrap);
+  };
+
+  const setLivePage = (index) => {
+    if (!livePages.length) return;
+    livePageIndex = Math.max(0, Math.min(index, livePages.length - 1));
+    const page = livePages[livePageIndex];
+    const img = $("[data-page-image]");
+    const label = $("[data-page-label]");
+    if (img) {
+      img.src = page.url || "";
+      img.hidden = !page.url;
+    }
+    if (label) label.textContent = `Page ${page.page} of ${livePages.length}`;
+    const nav = $("[data-page-nav]");
+    if (nav) nav.hidden = livePages.length < 2;
+    drawLiveBoxes();
+    if (lockedField) highlight(lockedField, { scroll: false });
+  };
+
+  showLiveFieldPage = (key) => {
+    const meta = liveMeta[key];
+    if (!meta || !meta.page || !livePages.length) return;
+    const idx = livePages.findIndex((page) => page.page === meta.page);
+    if (idx >= 0 && idx !== livePageIndex) setLivePage(idx);
+  };
 
   if (ingest && !ingest.hidden) {
-    const steps = ["OCR Scanning…", "Vision LLM Extraction…", "Pydantic Schema Validation…", "Ready for Review"];
+    const steps = ["Reading PDF layout…", "Groq JSON extraction…", "Align fields to page boxes…", "Ready for Review"];
     const label = $("[data-ingest-step]");
     const fill = $("[data-ingest-fill]");
     let i = 0;
@@ -265,20 +315,49 @@
 
     const frame = $("[data-pdf-frame]");
     const missing = $("[data-pdf-missing]");
-    if (frame) {
-      if (doc.file_url) {
-        frame.src = doc.file_url;
-        frame.hidden = false;
-        if (missing) missing.hidden = true;
+    const liveScan = $("[data-live-scan]");
+    const pdfWrap = $("[data-pdf-wrap]");
+    livePages = Array.isArray(doc.page_images) ? doc.page_images.filter((page) => page && page.url) : [];
+    liveMeta = doc.field_meta && typeof doc.field_meta === "object" ? doc.field_meta : {};
+    if (liveScan && pdfWrap) {
+      if (livePages.length) {
+        liveScan.hidden = false;
+        pdfWrap.hidden = true;
+        setLivePage(0);
       } else {
-        frame.removeAttribute("src");
-        frame.hidden = true;
-        if (missing) missing.hidden = false;
+        liveScan.hidden = true;
+        pdfWrap.hidden = false;
+        if (frame) {
+          if (doc.file_url) {
+            frame.src = doc.file_url;
+            frame.hidden = false;
+            if (missing) missing.hidden = true;
+          } else {
+            frame.removeAttribute("src");
+            frame.hidden = true;
+            if (missing) missing.hidden = false;
+          }
+        }
+      }
+    }
+
+    const layoutNote = $("[data-layout-note]");
+    if (layoutNote) {
+      const located = Object.values(liveMeta).filter((meta) => meta && meta.matched).length;
+      if (livePages.length && located === 0) {
+        layoutNote.hidden = false;
+        layoutNote.textContent = "Page image is ready. No selectable text was found to place boxes — common on pure scans.";
+      } else {
+        layoutNote.hidden = true;
       }
     }
 
     const hint = $("[data-review-hint]");
-    if (hint) hint.textContent = "Edit extracted fields, then approve or reject.";
+    if (hint) {
+      hint.textContent = livePages.length
+        ? "Hover or click a field — the matching region glows on the page."
+        : "Edit extracted fields, then approve or reject.";
+    }
     const errorEl = $("[data-review-error]");
     if (errorEl) {
       errorEl.textContent = doc.error_message || "";
@@ -305,12 +384,27 @@
         .map((key) => {
           const value = extracted[key];
           const empty = value === null || value === undefined || value === "";
-          const low = required.has(key) && empty;
+          const meta = liveMeta[key] || {};
+          const matched = Boolean(meta.matched);
+          const conf = Math.round((meta.conf || 0) * 100);
+          const low = (required.has(key) && empty) || (!empty && !matched);
+          let badge = "Extracted";
+          let badgeClass = "conf-ok";
+          if (empty) {
+            badge = "Review needed";
+            badgeClass = "conf-warn";
+          } else if (matched) {
+            badge = `${conf || 90}% on page`;
+            badgeClass = conf < 75 ? "conf-warn" : "conf-ok";
+          } else {
+            badge = "Value not located on page";
+            badgeClass = "conf-warn";
+          }
           return `<div class="field${low ? " is-low" : ""}" data-field="${escapeHtml(key)}">
             <span class="field-head">${escapeHtml(labelize(key))}</span>
             <input name="${escapeHtml(key)}" value="${escapeHtml(value == null ? "" : value)}" />
             <div class="field-meta">
-              <span class="conf-badge ${low ? "conf-warn" : "conf-ok"}">${low ? "Review needed" : "Extracted"}</span>
+              <span class="conf-badge ${badgeClass}">${badge}</span>
             </div>
           </div>`;
         })
@@ -328,6 +422,14 @@
           title: `${missingRequired.length} required field${missingRequired.length === 1 ? "" : "s"} empty`,
         });
       } else items.push({ ok: true, title: "Required fields present" });
+      const located = Object.values(liveMeta).filter((meta) => meta && meta.matched).length;
+      if (livePages.length) {
+        items.push(
+          located
+            ? { ok: true, title: `${located} field${located === 1 ? "" : "s"} located on the page` }
+            : { ok: false, title: "No field boxes matched on the page" }
+        );
+      }
       if (doc.status === "approved") items.push({ ok: true, title: "Approved" });
       validations.innerHTML = items
         .map((rule) => `<span class="${rule.ok ? "is-ok" : "is-bad"}">${rule.ok ? "✔" : "!"} ${escapeHtml(rule.title)}</span>`)
@@ -733,7 +835,7 @@
       bar.style.width = `${(n / total) * 100}%`;
       status.textContent =
         n < total
-          ? `Processing ${n} of ${total} files… Vision LLM + Pydantic worker`
+          ? `Processing ${n} of ${total} files… layout + Groq worker`
           : `Done. ${total - 2} success, 2 flagged for review · avg 1.2s/doc`;
       if (n < total) window.setTimeout(tick, 70);
       else toast("Batch complete (UI). 2 documents need review.");
@@ -1053,6 +1155,14 @@
       }
       toast("POST https://hooks.example.test/fieldline → 200 OK (UI)");
       closeAll();
+      return;
+    }
+    if (e.target.closest("[data-page-prev]")) {
+      setLivePage(livePageIndex - 1);
+      return;
+    }
+    if (e.target.closest("[data-page-next]")) {
+      setLivePage(livePageIndex + 1);
       return;
     }
     if (e.target.closest("[data-run-batch]")) {

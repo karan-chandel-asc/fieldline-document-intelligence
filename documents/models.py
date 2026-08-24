@@ -78,6 +78,8 @@ class Document(models.Model):
     original_name = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_QUEUED)
     extracted_data = models.JSONField(default=dict, blank=True)
+    field_meta = models.JSONField(default=dict, blank=True)
+    page_images = models.JSONField(default=list, blank=True)
     error_message = models.TextField(blank=True, default="")
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

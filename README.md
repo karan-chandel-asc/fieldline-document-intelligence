@@ -8,9 +8,9 @@
 [![Pydantic](https://img.shields.io/badge/Validation-Pydantic-E92063)](https://docs.pydantic.dev/)
 [![SQLite](https://img.shields.io/badge/DB-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 
-**Fieldline** is a full-stack document intelligence workspace: upload PDFs, extract structured fields with **Groq**, review low-confidence results, approve clean rows, and ship JSON / CSV / webhooks — from one operator UI.
+**Fieldline** is a full-stack document intelligence workspace: upload PDFs, render pages with **PyMuPDF**, extract structured fields with **Groq**, align those values onto the page, review, then ship JSON / CSV / webhooks — from one operator UI.
 
-> Portfolio project. Built end-to-end (product UI, session APIs, Celery extraction, Groq JSON, human review, data warehouse).
+> Portfolio project. Built end-to-end (product UI, session APIs, Celery extraction, PyMuPDF layout, Groq JSON, human review, data warehouse).
 
 ---
 
@@ -74,10 +74,10 @@ Honest scope for recruiters and clients.
 | **Auth** | Signup, login, logout (session cookie + DRF). Account modal uses the signed-in user. |
 | **Schemas** | Save / list / delete extraction schemas. Infinite-scroll list in the UI. |
 | **Upload** | Multi-PDF upload. Schema is **optional**. Files stored under `media/`. |
-| **Extraction** | Celery job → `pypdf` text → Groq JSON. Statuses: `queued`, `processing`, `needs_review`, `extracted`, `approved`, `failed`. |
+| **Extraction** | Celery job → **PyMuPDF** page image + word boxes → Groq JSON → match values to boxes. Statuses: `queued`, `processing`, `needs_review`, `extracted`, `approved`, `failed`. |
 | **Review rules** | No schema → always **needs review**. Schema provided and every field filled → **extracted** (auto-ingest to Data). Any empty required/schema field → **needs review**. Groq fail → **failed**. |
 | **Inbox / Exceptions** | Live list API with filters, search, retry, approve, reject. |
-| **Human review** | Live PDF iframe + editable fields. Sample demos still work with `?doc=invoice\|receipt\|bol`. |
+| **Human review** | Live page image + editable fields. Matched values glow on the PDF page. Sample `?doc=invoice` demos still use hardcoded boxes, not live geometry. |
 | **Data warehouse** | On `extracted`, Celery POSTs `/app/records/api/ingest/` (fallback writes locally if HTTP fails). Dynamic table columns from payload keys. |
 | **Dashboard** | Live KPIs, attention list, pipeline steps. |
 | **Exports** | JSON / CSV generate + download. HTTPS webhook destination (URL only) + ping test. |
@@ -92,7 +92,8 @@ Honest scope for recruiters and clients.
 | Destination integrations | PostgreSQL, Supabase, Airtable, QuickBooks, Xero, S3, Sheets, n8n — **Coming soon** on Exports |
 | OAuth / MFA | Not implemented |
 | Docker / AWS deploy | Not in this repo |
-| Landing metrics (`1.8s`, `99.4%`) | Product copy on the marketing page, not measured production SLAs |
+| Landing metrics (`1.8s`, `99.4%`, Vision LLM) | Removed from the marketing page. Extraction is PyMuPDF layout + Groq JSON, not a vision model. |
+| OCR / handwriting boxes | Not installed. Pure scans still get a page image; boxes need a PDF text layer |
 
 > Screenshots show the **working** product surface. Extraction requires a Groq key **and** a running Celery worker.
 
@@ -106,7 +107,7 @@ Honest scope for recruiters and clients.
 | **Sign in** | ![Login](screenshots/login.png) | Email/password workspace login |
 | **Overview** | ![Dashboard](screenshots/dashboard.png) | KPIs, review queue, pipeline steps |
 | **Inbox** | ![Inbox](screenshots/inbox.png) | Upload PDFs, batch worker, status filters |
-| **Human review** | ![Review](screenshots/review.png) | PDF + extracted form, approve / reject / JSON / CSV |
+| **Human review** | ![Review](screenshots/review.png) | Page image + field boxes, approve / reject / JSON / CSV |
 | **Schemas** | ![Schemas](screenshots/schemas.png) | Custom field map Groq must fill |
 | **Data** | ![Data](screenshots/records.png) | Warehouse of extracted rows after a complete schema run |
 | **Exports** | ![Exports](screenshots/exports.png) | JSON, CSV, webhook test; extra destinations marked coming soon |
@@ -161,6 +162,7 @@ class DashboardOverviewApiView(APIView):
 | `accounts/pipelines/base_pipeline.py` | Shared `(success, message, payload)` contract |
 | `dashboard/views.py` | Thin API + pipeline |
 | `documents/pipelines/document_pipeline.py` | Upload, list, update, retry orchestration |
+| `documents/services/layout_service.py` | Page PNG, word boxes, value alignment |
 | `documents/services/extraction_service.py` | Status rules + Groq + webhook ingest |
 | `fieldline/responses.py` | Consistent JSON envelope |
 | `fieldline/pagination.py` | `has_more` pagination for infinite scroll |
@@ -182,9 +184,11 @@ flowchart TB
   C --> F[Celery filesystem queue<br/>tmp/celery/queue]
 
   F --> G[Celery worker --pool=solo]
-  G --> H[pypdf text extract]
+  G --> H[PyMuPDF page image + words]
   H --> I[Groq JSON extraction]
   I --> D
+  I --> P[Match values to word boxes]
+  P --> D
 
   I --> J{Schema complete?}
   J -->|yes| K[POST /app/records/api/ingest/]
@@ -199,21 +203,22 @@ flowchart TB
 flowchart TB
   A[1️⃣ Operator drops PDFs in Inbox] --> B[2️⃣ Django saves files + ExtractionJob]
   B --> C[3️⃣ Celery task queued]
-  C --> D[4️⃣ Worker reads PDF text with pypdf]
+  C --> D[4️⃣ Worker renders pages and word boxes]
   D --> E[5️⃣ Groq returns JSON fields]
-  E --> F{Schema?}
-  F -->|none or empty fields| G[Status: needs_review]
+  E --> P[6️⃣ Align values to word boxes]
+  P --> F{Schema complete?}
+  F -->|no or empty fields| G[Status: needs_review]
   F -->|all schema fields filled| H[Status: extracted]
-  H --> I[6️⃣ Webhook ingest into Data]
-  G --> J[✅ Human review]
+  H --> I[7️⃣ Webhook ingest into Data]
+  G --> J[✅ Human review — click a field to glow the box]
 ```
 
 ### 3) Human review → export
 
 ```mermaid
 flowchart TB
-  A[1️⃣ Open Review with ?id=document] --> B[2️⃣ Load PDF + extracted_data]
-  B --> C[3️⃣ Edit fields · approve or reject]
+  A[1️⃣ Open Review with ?id=document] --> B[2️⃣ Load page image + extracted_data + field_meta]
+  B --> C[3️⃣ Click a field — box glows · edit · approve or reject]
   C --> D[PATCH document status]
   D --> E[JSON / CSV download]
   D --> F[Optional webhook ping]
@@ -222,7 +227,8 @@ flowchart TB
 | What | Where it lives |
 |------|----------------|
 | Users, schemas, jobs, documents, records | SQLite (`db.sqlite3`) |
-| PDF files | `media/` |
+| PDF files + page PNGs | `media/` |
+| Word boxes / field_meta | `Document.field_meta` JSON |
 | Extraction JSON | Groq (`GROQ_MODEL`) |
 | Background jobs | Celery + filesystem broker |
 | Optional outbound webhook | `WebhookDestination.url` |
@@ -239,7 +245,8 @@ flowchart TB
 | Async jobs | Celery (`--pool=solo` on Windows) |
 | Broker | Kombu filesystem (`CELERY_BROKER_URL=filesystem://`) — **no Redis required** |
 | LLM | Groq (`openai/gpt-oss-120b` by default) |
-| PDF text | pypdf |
+| PDF layout | PyMuPDF (`pymupdf`) — page PNG + word coordinates |
+| PDF text fallback | pypdf |
 | App UI | Custom CSS + vanilla JS |
 | Database | SQLite (local) |
 
@@ -303,6 +310,7 @@ cd "<project-root>"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+# includes pymupdf (page images + word boxes) and groq
 ```
 
 ### 2. Configure `.env`
@@ -365,7 +373,7 @@ Save a named field map (`field_name`, `field_type`, `field_required`). Upload ca
 ### Documents & extraction
 
 1. Upload PDFs → `ExtractionJob` + `Document` rows → `process_extraction_job.delay(job_id)`.
-2. Worker: `pypdf` text → Groq JSON (schema keys, or open extraction if no schema).
+2. Worker: PyMuPDF renders each page and collects word boxes → Groq JSON (schema keys, or open extraction if no schema) → values are aligned back to those boxes (`field_meta`).
 3. Status:
    - **no schema** → `needs_review`
    - **schema complete** → `extracted` → ingest webhook → Data table
@@ -376,8 +384,9 @@ Save a named field map (`field_name`, `field_type`, `field_required`). Upload ca
 
 ### Human review
 
-- Live: `/app/review/?id=<document.id>` loads the PDF and extracted fields from the API.
+- Live: `/app/review/?id=<document.id>` loads the **page image**, extracted fields, and bounding boxes from `field_meta`.
 - Samples: `/app/review/?doc=invoice` (also `receipt`, `bol`) — UI demo without a database row.
+- Scanned PDFs with no text layer still render a page image; boxes appear only when selectable words match.
 - Approve / reject / retry hit real APIs (samples without an id stay UI-only).
 
 ### Data warehouse
@@ -475,7 +484,8 @@ Broker folders (created automatically): `tmp/celery/queue` (in **and** out must 
 | Groq 404 / model missing | Set `GROQ_MODEL=openai/gpt-oss-120b` and restart Celery |
 | `pywintypes` / filesystem broker error | `pip install pywin32` (already in requirements) |
 | Data table empty after extract | Keep **runserver** up so ingest webhook can POST; schema must be complete |
-| PDF iframe blank | `X_FRAME_OPTIONS` is `SAMEORIGIN`; confirm `file_url` on the document |
+| PDF iframe only, no boxes | Re-run extraction after this upgrade; old jobs have no `page_images` |
+| `pymupdf` import error | `pip install pymupdf` from `requirements.txt`, then restart Celery |
 | `Could not start the background worker` | Celery process is not running |
 | Line-ending warnings on `git add` | Harmless on Windows (`LF` → `CRLF`); add still succeeded |
 

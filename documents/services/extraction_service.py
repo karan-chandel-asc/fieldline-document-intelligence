@@ -1,11 +1,13 @@
 from documents.models import Document, ExtractionJob
 from documents.services.groq_extraction import GroqExtractionService
+from documents.services.layout_service import LayoutService
 from fieldline.logger import logger
 
 
 class ExtractionService:
     def __init__(self):
         self.groq_extraction = GroqExtractionService()
+        self.layout_service = LayoutService()
 
     def process_job(self, job_id):
         try:
@@ -35,15 +37,28 @@ class ExtractionService:
     def process_document(self, document, job, update_counts=True):
         document.status = Document.STATUS_PROCESSING
         document.save(update_fields=["status", "updated_at"])
+        layout = {"text": "", "pages": [], "words": []}
         try:
-            text = self.groq_extraction.extract_text(document.file.path)
+            layout = self.layout_service.analyze(document)
+            document.page_images = layout.get("pages") or []
+            text = layout.get("text") or self.groq_extraction.extract_text(document.file.path)
             schema = document.schema or (job.schema if job else None)
             success, message, data = self.groq_extraction.extract_fields(schema, text)
             if not success:
                 document.status = Document.STATUS_FAILED
                 document.error_message = message
                 document.extracted_data = {}
-                document.save(update_fields=["status", "error_message", "extracted_data", "updated_at"])
+                document.field_meta = {}
+                document.save(
+                    update_fields=[
+                        "status",
+                        "error_message",
+                        "extracted_data",
+                        "field_meta",
+                        "page_images",
+                        "updated_at",
+                    ]
+                )
                 if update_counts:
                     job.processed += 1
                     job.flagged_count += 1
@@ -53,7 +68,17 @@ class ExtractionService:
             document.status = self._status_for_result(schema, data)
             document.error_message = ""
             document.extracted_data = data or {}
-            document.save(update_fields=["status", "error_message", "extracted_data", "updated_at"])
+            document.field_meta = self.layout_service.match_fields(layout.get("words") or [], data)
+            document.save(
+                update_fields=[
+                    "status",
+                    "error_message",
+                    "extracted_data",
+                    "field_meta",
+                    "page_images",
+                    "updated_at",
+                ]
+            )
             if update_counts:
                 job.processed += 1
                 job.success_count += 1
@@ -72,7 +97,7 @@ class ExtractionService:
             logger.error(f"Error processing document {document.id}: {e}")
             document.status = Document.STATUS_FAILED
             document.error_message = str(e)
-            document.save(update_fields=["status", "error_message", "updated_at"])
+            document.save(update_fields=["status", "error_message", "page_images", "updated_at"])
             if update_counts:
                 job.processed += 1
                 job.flagged_count += 1
